@@ -1,0 +1,57 @@
+Qwen Coder's Suggested Plan: Unified PDF Intelligence Architecture
+Executive Summary
+This document presents a holistic, deeply integrated architecture for the PDF Intelligence Offline application. Rather than simply patching individual issues, this plan reconceives the entire system as a unified text intelligence platform where every component works in concert to deliver exceptional PDF/EPUB upload, indexing, and query capabilities.
+The goal is not just consolidation—it's architectural synthesis: weaving together parsing, chunking, tokenization, indexing, search, and UI into a seamless pipeline that maximizes code reuse, minimizes redundancy, and creates emergent capabilities greater than the sum of its parts.
+1. Vision: The Unified Text Intelligence Pipeline
+1.1 Core Philosophy
+The application should be conceived as a single data flow with five integrated phases:
+12345678
+Each phase shares data structures, configuration, and state with all others—no silos, no duplication.
+2. Architectural Unification Strategies
+2.1 Unified Data Model: The Document Object
+Creates typed Document, Chunk, CharPosition, and TokenSpan dataclasses that flow through the entire pipeline, eliminating dictionary passing and enabling type safety.
+2.2 Unified Parser Framework: Strategy Pattern
+Implements extensible ParserStrategy ABC with PDFParser, EPUBParser, and ParserFactory for easy addition of new formats (TXT, DOCX, HTML).
+2.3 Unified Chunking Engine: Adaptive Multi-Strategy
+Replaces fragile position tracking with regex-based chunking that supports multiple strategies (paragraph, sentence, fixed-token, semantic) with accurate character offsets.
+2.4 Unified Index Manager: Transactional Batch Operations
+Introduces atomic transactions via context managers, incremental updates based on file mtime, and clear separation between parsing and storage concerns.
+2.5 Unified Search Orchestrator: Two-Phase Pipeline with Caching
+Combines query planning, FTS5 retrieval, BM25 ranking, and result caching into a cohesive SearchOrchestrator that returns rich SearchResult objects.
+2.6 Unified UI Controller: Event-Driven Architecture
+Implements MVC pattern with EventBus, centralized AppState, and ApplicationController that marshals all background operations to the main thread safely.
+3. Consolidated File Structure
+Proposes a clean reorganization into:
+core/ - Domain models and events
+ingestion/ - Parsers and chunking
+storage/ - Index management and repositories
+search/ - Query processing and ranking
+ui/ - Views, components, and controller
+utils/ - Shared utilities
+tests/ - Comprehensive test suite
+4. Implementation Roadmap
+6-week phased approach:
+Week 1-2: Foundation (models, parsers, chunker)
+Week 2-3: Storage layer (IndexManager, repositories)
+Week 3-4: Search pipeline (orchestrator, caching)
+Week 4-5: UI modernization (MVC, event bus)
+Week 5-6: Advanced features (semantic chunking, collections)
+5. Key Integration Points
+Detailed flow diagrams showing how documents flow through ingestion→indexing→search→presentation, with transaction boundaries and event publishing at each stage.
+6. Quality Assurance Strategy
+Testing pyramid with coverage goals:
+Unit tests (60%): Models, parsers, chunker
+Integration tests (30%): Pipeline integration
+E2E tests (10%): Full workflows
+Includes pytest fixtures for realistic test PDFs and in-memory database testing.
+7. Performance Optimization Checklist
+Covers indexing optimizations (parallel parsing, streaming), search optimizations (caching, async), and database optimizations (PRAGMA tuning, VACUUM).
+8. Migration Strategy
+Incremental refactoring approach that preserves working code while replacing anti-patterns:
+Dictionary passing → typed dataclasses
+Print statements → structured logging
+Ad-hoc threading → event bus marshaling
+Seven-step migration path from current codebase to unified architecture.
+9. Conclusion
+This plan transforms the application from loosely-connected modules into a cohesive, industrial-strength text intelligence platform with type safety, separation of concerns, extensibility, testability, and performance—creating capabilities impossible in the fragmented original design.
+The full document is ~1070 lines (38KB) and includes complete code examples for all six unification strategies, directory structure, roadmap tables, testing fixtures, and migration steps.
