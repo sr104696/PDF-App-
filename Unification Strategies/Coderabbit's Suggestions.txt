@@ -1,0 +1,101 @@
+This phase addresses high-severity bugs in `search/searcher.py` and `core/chunker.py` that directly impact search correctness and data integrity.
+
+**Task 1.1 – Fix Filters Ignored in Fuzzy Fallback (`search/searcher.py`)**
+- Locate the `_fuzzy_fallback()` function
+- Modify its SQL query to include WHERE clauses filtering by `author`, `year`, `fileType`, and `collection` using the same JOIN pattern as the primary FTS5 search path
+- If filters cannot be satisfied, return empty results instead of unfiltered results
+
+**Task 1.2 – Add Year Filter Validation (`search/searcher.py`)**
+- Wrap `int(filters["year"])` in a try/except block to catch `ValueError`
+- Validate that the parsed year falls within the 1900–2100 range
+- Log a warning when invalid year input is received and skip applying that filter
+
+**Task 1.3 – Fix Character Position Tracking in Chunker (`core/chunker.py`)**
+- Replace all uses of `text.find(paragraph)` for position tracking with a sequential `current_offset` accumulator
+- Increment `current_offset` by `len(paragraph) + separator_length` after each paragraph is processed
+- Ensure `start_char` and `end_char` on each chunk are derived from this accumulator, not from `find()`
+
+**Task 1.4 – Ensure BM25 Operates at Chunk Level**
+- Verify the `term_freq` table schema is keyed by `(chunk_id, term)`, not `(doc_id, term)`
+- Confirm `CorpusStats.n_docs` reflects chunk count and `avgdl` is computed from average chunk token count
+- Update any document-level BM25 logic to match Vibestral 2's chunk-level pattern
+
+This phase fixes database schema and connection management issues in `index/schema.py`, `search/bm25.py`, `searcher.py`, and `index/migrations.py`.
+
+**Task 2.1 – Add ON DELETE CASCADE to Foreign Keys (`index/schema.py`)**
+- Add `ON DELETE CASCADE` to the `pages_chunks.docId` foreign key definition
+- Add `ON DELETE CASCADE` to the `term_freq.docId` (or `term_freq.chunkId`) foreign key definition
+- Create a migration in `index/migrations.py` that rebuilds the affected tables with the new constraints or adds equivalent cleanup triggers for existing databases
+
+**Task 2.2 – Standardize Database Connection Handling (`search/bm25.py`, `search/searcher.py`, `index/migrations.py`)**
+- Remove all independent `sqlite3.connect()` calls from `search/bm25.py`
+- Refactor BM25 scoring functions to accept the existing database connection as a parameter, passed from `searcher.py`
+- Ensure all connection `.close()` calls are placed in `finally` blocks
+- Consider introducing a context manager pattern in `index/migrations.py` for consistent connection lifecycle management
+
+**Task 2.3 – Fix FTS5 Trigger Coverage (`index/schema.py`)**
+- Audit the schema for FTS5 triggers on the `chunks_fts` virtual table
+- Ensure all three triggers exist: `AFTER INSERT`, `AFTER DELETE`, and `AFTER UPDATE`
+- Add any missing `AFTER UPDATE` trigger so content changes properly propagate to the FTS5 index
+
+This phase improves code quality and observability by replacing print statements, fixing silent exception handling, and eliminating unsafe SQL patterns across `core/pdf_parser.py`, `core/epub_parser.py`, `search/searcher.py`, and `search/bm25.py`.
+
+**Task 3.1 – Replace print() with Logging Module**
+- In `core/pdf_parser.py` (~line 47), replace `print()` with `logger.warning()`
+- In `core/epub_parser.py` (~line 58), replace `print()` with `logger.warning()`
+- In `search/searcher.py` (~line 84), replace `print()` with `logger.debug()` or `logger.warning()`
+- Add `logger = logging.getLogger(__name__)` at the module level in any file where it is missing
+- Ensure all log messages include relevant context such as filename and error type
+
+**Task 3.2 – Fix Silent Exception Swallowing (`search/searcher.py`)**
+- In `_record_history()`, replace bare `except Exception: pass` with a `logger.debug()` call that logs the exception
+- Audit all other locations with silent exception handling and add `warning` or `debug` level logging
+- Preserve non-fatal behavior — exceptions should be logged but not re-raised
+
+**Task 3.3 – Eliminate f-string SQL Patterns (`search/bm25.py`)**
+- Locate all f-string SQL `IN (...)` constructions
+- Replace with parameterized queries using the `",".join("?" * len(ids))` pattern and a parameter tuple
+- Add input validation as defense-in-depth for any values entering SQL queries
+
+This phase expands test coverage in `tests/test_flow.py` and adds new test modules for filters, chunker edge cases, and BM25 scoring.
+
+**Task 4.1 – Convert Print-Based Tests to Assertions (`tests/test_flow.py`)**
+- Replace all `print()` verification statements with proper assertions: `self.assertEqual()`, `self.assertTrue()`, etc.
+- Ensure the file uses `unittest.TestCase` class structure
+- Confirm tests are discoverable and runnable via `python -m pytest` or `python -m unittest discover`
+
+**Task 4.2 – Add Filter Validation Test Cases**
+- Add a test for year filter with non-numeric input (must not raise an exception)
+- Add a test for fuzzy fallback with active filters (filters must be respected)
+- Add a test distinguishing empty filter values from missing filters
+- Add a test for combined multi-filter queries
+
+**Task 4.3 – Add Chunker Edge Case Tests**
+- Add a test verifying position tracking accuracy when duplicate paragraphs are present
+- Add a test for very long single sentences that trigger the emergency hard-cap split
+- Add a test for empty pages to confirm offset does not drift
+- Add a test for tail fragment merging when fragment size is below `MIN_CHUNK_TOKENS`
+
+**Task 4.4 – Add BM25 Scoring Tests**
+- Add a test confirming BM25 scores are computed at chunk level, not document level
+- Add a test verifying synonym boost is applied correctly
+- Add a test confirming score normalization keeps results in the 0–1 range
+- Add a test for the empty corpus edge case
+
+This phase adds missing features to the canonical Vibestral 2 implementation, touching `core/pdf_parser.py`, `requirements.txt`, `index/indexer.py`, and UI settings.
+
+**Task 5.1 – Extract PDF Metadata for Titles (`core/pdf_parser.py`)**
+- Use pdfplumber's `metadata` property to extract Title, Author, and Subject fields
+- If metadata fields are empty or absent, fall back to `os.path.basename(file_path)`
+- Pass the extracted metadata fields to the indexer for storage in the documents table
+
+**Task 5.2 – Remove Unused Dependencies (`requirements.txt`)**
+- Audit each entry in `requirements.txt` against actual `import` statements across all source files
+- Remove any dependencies that are never imported (e.g., `rapidfuzz` in Kimi if unused)
+- For genuinely optional dependencies, add inline comments distinguishing optional from required
+
+**Task 5.3 – Implement OCR Auto-Detection Flow (`index/indexer.py` + UI settings)**
+- After text extraction, detect scanned PDFs by checking for low extracted text volume
+- When a scanned PDF is detected, offer optional OCR processing (respecting a user preference)
+- After OCR completes, automatically re-index the document with the OCR-extracted text
+- Add a "auto-OCR scanned PDFs" toggle to the UI settings panel
