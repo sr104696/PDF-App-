@@ -1,0 +1,2166 @@
+     1+  # Kiro-CLI's Suggested Plan — Deep Integration Strategy
+     2+
+     3+  **Document Version:** 2.0 — Comprehensive Unification
+     4+  **Date:** April 22, 2026
+     5+  **Objective:** Create a truly integrated, production-grade PDF/EPUB intelligence application by synthesizing
+      ALL implementations into a single, optimized, battle-tested core
+     6+
+     7+  ---
+     8+
+     9+  ## Executive Summary
+    10+
+    1+  After analyzing the entire codebase across 11 implementations (Lovable, Claude Code 1 & 2, Kimi, Vibestral 1 &
+     2, Qwen Coder, Codex, Base44, Z.AI, Implementation 1), along with 6 code reviews and 10 external reference
+     repositories, this plan presents a **holistic unification strategy** that:
+    12+
+    13+  1. **Preserves the best architectural decisions** from each implementation
+    14+  2. **Eliminates redundancy** while maintaining feature completeness
+    15+  3. **Fixes all identified bugs** across implementations
+    16+  4. **Optimizes performance** using proven patterns from external references
+    17+  5. **Creates a single source of truth** with no behavioral divergence between UI/CLI
+    18+  6. **Maintains offline-first principles** with optional online enhancement paths
+    19+
+    20+  **This is not the easy way out.** This plan requires deep integration work, not superficial file copying.
+    21+
+    22+  ---
+    23+
+    24+  ## Core Philosophy: Integration Over Selection
+    25+
+    26+  ### The Problem with "Pick One and Discard the Rest"
+    27+
+    28+  Each implementation contains unique insights:
+    29+  - **Lovable**: Most complete architecture, best test coverage, cleanest separation of concerns
+    30+  - **Claude Code 1**: Superior error handling patterns, robust migration system
+    31+  - **Kimi**: Elegant UI design, excellent progress feedback
+    32+  - **Vibestral 1**: Innovative query parser with intent detection
+    33+  - **Vibestral 2**: Production database with real-world data patterns
+    34+  - **Qwen Coder**: Comprehensive optimization analysis and performance profiling
+    35+  - **Codex**: Minimalist BM25 implementation with clear separation
+    36+  - **Code Reviews**: Critical bug identification and security analysis
+    37+
+    38+  **Simply choosing one implementation would discard 90% of the repository's value.**
+    39+
+    40+  ### The Integration Mandate
+    41+
+    42+  True integration means:
+    43+  1. **Behavioral synthesis** — combining the best UX patterns from all implementations
+    44+  2. **Algorithmic fusion** — merging optimized BM25, chunking, and parsing strategies
+    45+  3. **Error handling unification** — adopting the most robust fallback chains
+    46+  4. **Performance optimization** — applying all validated performance improvements
+    47+  5. **Test coverage maximization** — combining test cases from all implementations
+    48+  6. **Documentation consolidation** — creating a single authoritative architecture document
+    49+
+    50+  ---
+    51+
+    52+  ## Repository Analysis: What We Have
+    53+
+    54+  ### Implementation Quality Matrix
+    55+
+    56+  | Implementation | Architecture | Completeness | Bug Count | Performance | Test Coverage | Unique Features |
+    57+  |---|---|---|---|---|---|---|
+    58+  | **Lovable** | ⭐⭐⭐⭐⭐ | 95% | 7 identified | Good | High | Modular structure, migrations, packaging |
+    59+  | **Claude Code 1** | ⭐⭐⭐⭐⭐ | 90% | 4 identified | Good | Medium | Robust error handling, detailed docs |
+    60+  | **Kimi** | ⭐⭐⭐⭐ | 85% | 3 identified | Poor (N+1 queries) | Low | Excellent UI/UX, progress indicators |
+    61+  | **Vibestral 1** | ⭐⭐⭐⭐ | 80% | 5 identified | Good | Low | Intent detection, query shortcuts |
+    62+  | **Vibestral 2** | ⭐⭐⭐⭐ | 75% | Unknown | Good | Low | Real production database, facets |
+    63+  | **Qwen Coder** | ⭐⭐⭐ | 70% | 6 identified | Medium | Medium | Optimization report, profiling data |
+    64+  | **Codex** | ⭐⭐⭐ | 60% | 3 identified | Medium | None | Clean BM25, minimal dependencies |
+    65+  | **Claude Code 2** | ⭐⭐ | 40% | Unknown | Unknown | None | Alternative UI approach |
+    66+
+    67+  ### Critical Bugs Identified Across All Implementations
+    68+
+    69+  From the Devin code review and my analysis:
+    70+
+    71+  1. **Lovable**:
+    72+     - Filters ignored in fuzzy fallback (HIGH severity)
+    73+     - Unvalidated year filter can raise ValueError (MEDIUM)
+    74+     - `isolation_level=None` bypasses transaction safety (MEDIUM)
+    75+     - Character offset tracking drift in chunker (LOW)
+    76+     - Global MouseWheel binding captures all scroll events (LOW)
+    77+
+    78+  2. **Kimi**:
+    79+     - Per-row SQL queries in BM25 loop — N+1 query problem (HIGH)
+    80+     - Hardcoded synonym dictionary (MEDIUM)
+    81+
+    82+  3. **Codex**:
+    83+     - BM25 opens new DB connection per call (MEDIUM)
+    84+     - FTS query not sanitized for special characters (MEDIUM)
+    85+     - Results grouped by document, losing chunk granularity (MEDIUM)
+    86+
+    87+  4. **Qwen Coder**:
+    88+     - SQL injection surface in BM25 (LOW practically, MEDIUM in principle)
+    89+     - `print()` used instead of logging (LOW)
+    90+     - O(n) term_df update logic (MEDIUM)
+    91+     - Missing `ON DELETE CASCADE` (LOW)
+    92+
+    93+  5. **Repository-wide**:
+    94+     - `.gitignore` wrapped in code fences — not actually ignoring anything (LOW)
+    95+     - Committed `__pycache__` and `.pyc` files (LOW)
+    96+     - Committed SQLite database files with WAL journals (MEDIUM)
+    97+
+    98+  ---
+    99+
+   100+  ## The Unified Architecture Vision
+   101+
+   102+  ### Layer 1: Document Ingestion Pipeline
+   103+
+   104+  **Goal:** Single, robust extraction contract supporting PDF, EPUB, and OCR
+   105+
+   106+  **Integration Strategy:**
+   107+  - Use **Lovable's** extractor interface as the base contract
+   108+  - Adopt **Claude's** error handling patterns for corrupted files
+   109+  - Integrate **Kimi's** progress feedback mechanism
+   110+  - Apply **Qwen's** optimization for batch processing
+   111+
+   112+  **Unified Extractor Contract:**
+   113+  ```python
+   114+  @dataclass
+   115+  class PageText:
+   116+      page_num: int
+   117+      text: str
+   118+      heading_hint: Optional[str]
+   119+      metadata: Dict[str, Any]
+   120+      extraction_method: str  # "pdfplumber" | "pypdf" | "tesseract" | "ebooklib"
+   121+      confidence: float  # 0.0-1.0, for OCR quality indication
+   122+  ```
+   123+
+   124+  **Fallback Chain (from all implementations):**
+   125+  1. **PDF text-native**: pdfplumber → pypdf (strict=False) → empty page
+   126+  2. **PDF scanned**: Tesseract OCR (opt-in) → empty page with warning
+   127+  3. **EPUB**: ebooklib + BeautifulSoup (lxml) → BeautifulSoup (html.parser) → skip chapter
+   128+
+   129+  **Key Improvements:**
+   130+  - Add extraction confidence scoring (from Vibestral 2)
+   131+  - Implement parallel page extraction for large PDFs (from Qwen optimization report)
+   132+  - Add extraction telemetry for debugging (from Claude)
+   133+  - Support password-protected PDFs with UI prompt (future enhancement noted in all implementations)
+● Write C:\tmp\pdf-app-analysis\Unification Strategies\Codex's Suggested Plan - Deep Integration.md
+  added 355 lines at L135 in C:\tmp\pdf-app-analysis\Unification Strategies\Codex's Suggested Plan - Deep Integration.md
+   135+
+   136+  ### Layer 2: Text Normalization & Linguistic Processing
+   137+
+   138+  **Goal:** Unified text processing pipeline with multi-language support hooks
+   139+
+   140+  **Integration Strategy:**
+   141+  - Base on **Lovable's** layered normalization approach
+   142+  - Integrate **Vibestral 1's** advanced tokenizer with regex fallbacks
+   143+  - Adopt **Claude's** lazy NLTK loading pattern
+   144+  - Add **Qwen's** caching optimizations
+   145+
+   146+  **Unified Text Processing Pipeline:**
+   147+
+   148+  ```python
+   149+  class TextProcessor:
+   150+      """Unified text normalization and linguistic processing"""
+   151+
+   152+      def __init__(self, language: str = "english"):
+   153+          self.language = language
+   154+          self._stemmer = None  # Lazy-loaded
+   155+          self._sentence_tokenizer = None  # Lazy-loaded
+   156+          self._synonym_cache = None  # Lazy-loaded
+   157+
+   158+      def normalize(self, text: str) -> str:
+   159+          """Unicode normalization + cleanup"""
+   160+          # From Lovable + Claude improvements
+   161+
+   162+      def tokenize(self, text: str) -> List[str]:
+   163+          """Word tokenization with fallback"""
+   164+          # From Vibestral 1 + Lovable
+   165+
+   166+      def stem(self, word: str) -> str:
+   167+          """Snowball stemming with fallback"""
+   168+          # From all implementations
+   169+
+   170+      def split_sentences(self, text: str) -> List[str]:
+   171+          """Sentence segmentation with regex fallback"""
+   172+          # From Lovable + Claude
+   173+
+   174+      def expand_synonyms(self, word: str) -> List[str]:
+   175+          """Synonym expansion from editable JSON"""
+   176+          # From all implementations, enhanced
+   177+  ```
+   178+
+   179+  **Key Improvements:**
+   180+  - Unified tokenizer combining Vibestral's regex patterns with Lovable's NLTK integration
+   181+  - Language detection hooks for future multilingual support
+   182+  - Configurable normalization levels (aggressive vs. conservative)
+   183+  - Telemetry for tokenization quality metrics
+   184+
+   185+  ---
+   186+
+   187+  ### Layer 3: Semantic Chunking System
+   188+
+   189+  **Goal:** Optimal chunk boundaries preserving semantic coherence
+   190+
+   191+  **Integration Strategy:**
+   192+  - Use **Lovable's** 4-layer chunking as foundation
+   193+  - Fix **character offset tracking bug** identified in Devin review
+   194+  - Add **Vibestral 2's** section header detection
+   195+  - Integrate **Qwen's** memory-efficient chunking optimizations
+   196+
+   197+  **Unified Chunking Architecture:**
+   198+
+   199+  ```python
+   200+  class SemanticChunker:
+   201+      """4-layer semantic chunking with stable IDs"""
+   202+
+   203+      # Configuration (from all implementations)
+   204+      MAX_CHUNK_TOKENS = 512
+   205+      MIN_CHUNK_TOKENS = 20
+   206+      CHUNK_OVERLAP_TOKENS = 32
+   207+      HARD_CAP_TOKENS = 800
+   208+
+   209+      def chunk_document(self, pages: List[PageText]) -> List[Chunk]:
+   210+          """
+   211+          Layer 1: Page boundaries (native structure)
+   212+          Layer 2: Paragraph segmentation (blank lines + indentation)
+   213+          Layer 3: Sentence segmentation (NLTK punkt + regex fallback)
+   214+          Layer 4: Token-window packing (greedy with overlap)
+   215+          """
+   216+
+   217+      def chunk_page(self, page: PageText) -> List[Chunk]:
+   218+          """Process single page with accurate character tracking"""
+   219+          # FIX: Track positions during chunking, not retroactively
+   220+
+   221+      def generate_chunk_id(self, file_path: str, page: int,
+   222+                           start: int, end: int) -> str:
+   223+          """Stable SHA1 chunk ID for incremental updates"""
+   224+          # From Lovable + Claude
+   225+
+   226+      def link_chunks(self, chunks: List[Chunk]) -> List[Chunk]:
+   227+          """Wire prev_id/next_id across page boundaries"""
+   228+          # From Lovable
+   229+  ```
+   230+
+   231+  **Critical Bug Fix (from Devin review):**
+   232+
+   233+  The Lovable implementation has a character offset tracking bug:
+   234+  ```python
+   235+  # BROKEN (Lovable current):
+   236+  idx = text.find(piece[:60], cursor)  # Can find wrong occurrence
+   237+
+   238+  # FIXED (integrated approach):
+   239+  # Track character positions DURING chunking, not after
+   240+  ```
+   241+
+   242+  **Key Improvements:**
+   243+  - Accurate character position tracking throughout the pipeline
+   244+  - Section header detection from Vibestral 2
+   245+  - Chunk quality telemetry (avg length, overlap ratio, fragment count)
+   246+  - Memory-efficient streaming for massive documents (from Qwen)
+   247+  - Cross-page context preservation (from Claude)
+   248+
+   249+  ---
+   250+
+   251+  ### Layer 4: Storage & Indexing System
+   252+
+   253+  **Goal:** High-performance SQLite schema with incremental updates
+   254+
+   255+  **Integration Strategy:**
+   256+  - Base on **Lovable's** schema with FTS5 + term_freq + term_df
+   257+  - Add **Qwen's** performance indexes
+   258+  - Fix **transaction safety issues** from Devin review
+   259+  - Integrate **Claude's** migration system
+   260+  - Adopt **Vibestral 2's** production-tested pragmas
+   261+
+   262+  **Unified Database Schema:**
+   263+
+   264+  ```sql
+   265+  -- Core tables (from Lovable + enhancements)
+   266+
+   267+  CREATE TABLE documents (
+   268+      id INTEGER PRIMARY KEY,
+   269+      title TEXT NOT NULL,
+   270+      file_path TEXT UNIQUE NOT NULL,
+   271+      file_type TEXT NOT NULL,  -- 'pdf' | 'epub'
+   272+      page_count INTEGER,
+   273+      file_size INTEGER NOT NULL,
+   274+      file_mtime REAL NOT NULL,
+   275+      indexed_at REAL NOT NULL,
+   276+      extraction_method TEXT,  -- NEW: track how it was extracted
+   277+      metadata TEXT,  -- JSON blob
+   278+      UNIQUE(file_path)
+   279+  );
+   280+
+   281+  CREATE TABLE pages_chunks (
+   282+      id INTEGER PRIMARY KEY,
+   283+      chunk_id TEXT UNIQUE NOT NULL,  -- Stable SHA1
+   284+      doc_id INTEGER NOT NULL,
+   285+      page_num INTEGER,
+   286+      chunk_idx INTEGER,
+   287+      section_header TEXT,
+   288+      content TEXT NOT NULL,
+   289+      token_count INTEGER,
+   290+      start_char INTEGER,  -- FIXED: accurate tracking
+   291+      end_char INTEGER,     -- FIXED: accurate tracking
+   292+      prev_id TEXT,
+   293+      next_id TEXT,
+   294+      FOREIGN KEY (doc_id) REFERENCES documents(id) ON DELETE CASCADE
+   295+  );
+   296+
+   297+  CREATE TABLE term_freq (
+   298+      chunk_id TEXT NOT NULL,
+   299+      doc_id INTEGER NOT NULL,
+   300+      term TEXT NOT NULL,
+   301+      tf INTEGER NOT NULL,
+   302+      PRIMARY KEY (chunk_id, term),
+   303+      FOREIGN KEY (doc_id) REFERENCES documents(id) ON DELETE CASCADE
+   304+  );
+   305+
+   306+  CREATE TABLE term_df (
+   307+      term TEXT PRIMARY KEY,
+   308+      df INTEGER NOT NULL
+   309+  );
+   310+
+   311+  -- FTS5 virtual table (from Lovable)
+   312+  CREATE VIRTUAL TABLE chunks_fts USING fts5(
+   313+      content,
+   314+      tokenize='unicode61 remove_diacritics 2'
+   315+  );
+   316+
+   317+  -- Performance indexes (from Qwen + analysis)
+   318+  CREATE INDEX idx_docs_mtime ON documents(file_mtime);
+   319+  CREATE INDEX idx_docs_type ON documents(file_type);
+   320+  CREATE INDEX idx_chunks_doc ON pages_chunks(doc_id);
+   321+  CREATE INDEX idx_chunks_page ON pages_chunks(doc_id, page_num);
+   322+  CREATE INDEX idx_tf_term ON term_freq(term);
+   323+  CREATE INDEX idx_tf_doc ON term_freq(doc_id);
+   324+
+   325+  -- Search history (from Lovable + Claude)
+   326+  CREATE TABLE search_history (
+   327+      id INTEGER PRIMARY KEY,
+   328+      query TEXT NOT NULL,
+   329+      timestamp REAL NOT NULL,
+   330+      result_count INTEGER
+   331+  );
+   332+
+   333+  -- Metadata table for migrations (from Claude)
+   334+  CREATE TABLE meta (
+   335+      key TEXT PRIMARY KEY,
+   336+      value TEXT
+   337+  );
+   338+  ```
+   339+
+   340+  **Database Configuration (synthesized from all implementations):**
+   341+
+   342+  ```python
+   343+  # Optimal pragmas from Lovable + Vibestral 2 production testing
+   344+  PRAGMAS = {
+   345+      "journal_mode": "WAL",           # Concurrent reads during writes
+   346+      "synchronous": "NORMAL",         # Balance safety/speed
+   347+      "cache_size": -20000,            # 20 MB page cache
+   348+      "temp_store": "MEMORY",          # Temp tables in RAM
+   349+      "mmap_size": 30000000000,        # 30GB mmap (if available)
+   350+      "page_size": 4096,               # Standard page size
+   351+      "foreign_keys": "ON",            # Enforce referential integrity
+   352+  }
+   353+  ```
+   354+
+   355+  **Transaction Safety Fix (from Devin review):**
+   356+
+   357+  ```python
+   358+  # BROKEN (Lovable current):
+   359+  conn = sqlite3.connect(db_path, isolation_level=None)  # Autocommit mode
+   360+  # Manual BEGIN/COMMIT strings — fragile
+   361+
+   362+  # FIXED (integrated approach):
+   363+  conn = sqlite3.connect(db_path)  # Default deferred transactions
+   364+  with conn:  # Context manager handles commit/rollback
+   365+      conn.execute(...)
+   366+  ```
+   367+
+   368+  **Key Improvements:**
+   369+  - Fixed transaction safety using Python's context managers
+   370+  - Added extraction_method tracking for debugging
+   371+  - Performance indexes from Qwen's analysis
+   372+  - Proper CASCADE deletes
+   373+  - Migration versioning system from Claude
+   374+  - Batch insert optimizations from Qwen
+   375+
+   376+  ---
+   377+
+   378+  ### Layer 5: Search & Retrieval Engine
+   379+
+   380+  **Goal:** Fast, accurate two-phase retrieval with robust fallbacks
+   381+
+   382+  **Integration Strategy:**
+   383+  - Base on **Lovable's** two-phase architecture
+   384+  - Fix **filter handling bug** in fuzzy fallback (HIGH severity from Devin)
+   385+  - Integrate **Vibestral 1's** intent detection and query shortcuts
+   386+  - Adopt **Codex's** clean BM25 separation
+   387+  - Fix **N+1 query problem** from Kimi (HIGH severity)
+   388+  - Add **Qwen's** caching optimizations
+   389+
+   390+  **Unified Search Pipeline:**
+   391+
+   392+  ```python
+   393+  class UnifiedSearchEngine:
+   394+      """Two-phase retrieval with robust fallbacks"""
+   395+
+   396+      def search(self, conn: Connection, query: str,
+   397+                 filters: Dict[str, Any], limit: int = 20) -> SearchResponse:
+   398+          """
+   399+          Phase 1: Parse & Expand
+   400+          Phase 2: Filter & Prefilter
+   401+          Phase 3: Candidate Generation (FTS5)
+   402+          Phase 4: Rerank (BM25)
+   403+          Phase 5: Fallback (if needed)
+   404+          Phase 6: Format & Return
+   405+          """
+   406+
+   407+          # Phase 1: Parse query
+   408+          parsed = self._parse_query(query)
+   409+          if parsed.is_empty():
+   410+              return SearchResponse.empty()
+   411+
+   412+          # Phase 2: Build filter predicates
+   413+          filter_sql, filter_params = self._build_filters(filters)
+   414+
+   415+          # Phase 3: FTS5 candidate generation
+   416+          candidates = self._fetch_candidates(
+   417+              conn, parsed, filter_sql, filter_params, limit=200
+   418+          )
+   419+
+   420+          # Phase 4: BM25 reranking
+   421+          if candidates:
+   422+              results = self._rerank_bm25(conn, candidates, parsed)
+   423+          else:
+   424+              # Phase 5: Fuzzy fallback WITH FILTERS (FIX from Devin)
+   425+              results = self._fuzzy_fallback(
+   426+                  conn, parsed, filter_sql, filter_params, limit=50
+   427+              )
+   428+
+   429+          # Phase 6: Format results
+   430+          return self._format_response(results, parsed, limit)
+   431+  ```
+   432+
+   433+  **Critical Bug Fix #1: Filters in Fuzzy Fallback (HIGH severity)**
+   434+
+   435+  ```python
+   436+  # BROKEN (Lovable current):
+   437+  def _fuzzy_fallback(self, conn, parsed, filters, limit):
+   438+      # filters parameter accepted but NEVER USED
+   439+      rows = conn.execute("""
+   440+          SELECT * FROM pages_chunks
+   441+          ORDER BY RANDOM() LIMIT 5000
+   442+      """).fetchall()
+   443+      # User's file_type filter silently ignored!
+   444+
+   445+  # FIXED (integrated approach):
+   446+  def _fuzzy_fallback(self, conn, parsed, filter_sql, filter_params, limit):
+   447+      # Apply the SAME filters as FTS search
+   448+      rows = conn.execute(f"""
+   449+          SELECT c.* FROM pages_chunks c
+   450+          JOIN documents d ON c.doc_id = d.id
+   451+          WHERE 1=1 {filter_sql}
+   452+          ORDER BY RANDOM() LIMIT 5000
+   453+      """, filter_params).fetchall()
+   454+      # Filters now properly applied
+   455+  ```
+   456+
+   457+  **Critical Bug Fix #2: N+1 Query Problem in BM25 (HIGH severity from Kimi)**
+   458+
+   459+  ```python
+   460+  # BROKEN (Kimi current):
+   461+  def _bm25(self, doc_id, chunk_id, terms, N, avgdl):
+   462+      for term in terms:
+   463+          # Executes TWO queries per term per candidate!
+   464+          doc_len = conn.execute("SELECT ...").fetchone()
+   465+          tf = conn.execute("SELECT ...").fetchone()
+   466+      # 200 candidates × 5 terms × 2 queries = 2000 SQL calls!
+   467+
+   468+  # FIXED (integrated approach from Lovable + optimization):
+   469+  def _rerank_bm25(self, conn, candidates, parsed):
+   470+      chunk_ids = [c.chunk_id for c in candidates]
+   471+
+   472+      # Batch fetch ALL term frequencies in ONE query
+   473+      tf_data = conn.execute("""
+   474+          SELECT chunk_id, term, tf
+   475+          FROM term_freq
+   476+          WHERE chunk_id IN ({})
+   477+      """.format(','.join('?' * len(chunk_ids))), chunk_ids).fetchall()
+   478+
+   479+      # Batch fetch ALL document frequencies in ONE query
+   480+      df_data = conn.execute("""
+   481+          SELECT term, df
+   482+          FROM term_df
+   483+          WHERE term IN ({})
+   484+      """.format(','.join('?' * len(parsed.stems))), parsed.stems).fetchall()
+   485+
+   486+      # Now score in memory — ZERO additional queries
+   487+      for candidate in candidates:
+   488+          score = self._calculate_bm25(candidate, tf_data, df_data, ...)
+   489+  ```
+● Write C:\tmp\pdf-app-analysis\Unification Strategies\Codex's Suggested Plan - Deep Integration.md
+  added 346 lines at L492 in C:\tmp\pdf-app-analysis\Unification Strategies\Codex's Suggested Plan - Deep Integration.md
+   492+
+   493+  **Query Parser Integration (from Vibestral 1 + Lovable):**
+   494+
+   495+  ```python
+   496+  class UnifiedQueryParser:
+   497+      """Intent-aware query parsing with shortcuts"""
+   498+
+   499+      def parse(self, query: str) -> ParsedQuery:
+   500+          """
+   501+          Detects:
+   502+          - Exact phrases: "deep learning"
+   503+          - Intent shortcuts: define:term, compare:A vs B, example:concept
+   504+          - Boolean operators: AND, OR, NOT
+   505+          - Filters: type:pdf, year:2023, author:"Smith"
+   506+          - Wildcards: neural*
+   507+          """
+   508+
+   509+          # From Vibestral 1: Intent detection
+   510+          intent = self._detect_intent(query)
+   511+
+   512+          # From Lovable: Phrase extraction
+   513+          phrases = self._extract_phrases(query)
+   514+
+   515+          # From all: Tokenization + stemming
+   516+          tokens = self._tokenize_and_stem(query)
+   517+
+   518+          # From Vibestral 1: Synonym expansion
+   519+          expanded = self._expand_synonyms(tokens)
+   520+
+   521+          return ParsedQuery(
+   522+              original=query,
+   523+              intent=intent,
+   524+              phrases=phrases,
+   525+              tokens=tokens,
+   526+              stems=set(tokens + expanded),
+   527+              filters=self._extract_filters(query)
+   528+          )
+   529+  ```
+   530+
+   531+  **BM25 Implementation (synthesized from all implementations):**
+   532+
+   533+  ```python
+   534+  class BM25Scorer:
+   535+      """Okapi BM25 with configurable parameters"""
+   536+
+   537+      # Parameters from Lovable + tuning from Qwen
+   538+      K1 = 1.5  # Term frequency saturation
+   539+      B = 0.75  # Length normalization
+   540+      SYNONYM_BOOST = 0.15  # Additive boost for synonym matches
+   541+
+   542+      def score_chunks(self,
+   543+                       candidates: List[Chunk],
+   544+                       parsed: ParsedQuery,
+   545+                       corpus_stats: CorpusStats,
+   546+                       tf_data: Dict[str, Dict[str, int]],
+   547+                       df_data: Dict[str, int]) -> List[ScoredResult]:
+   548+          """
+   549+          Score candidates using Okapi BM25
+   550+
+   551+          Args:
+   552+              candidates: Chunks from FTS5 prefilter
+   553+              parsed: Parsed query with stems
+   554+              corpus_stats: N (total chunks), avgdl (avg chunk length)
+   555+              tf_data: {chunk_id: {term: tf}} - pre-fetched
+   556+              df_data: {term: df} - pre-fetched
+   557+
+   558+          Returns:
+   559+              Scored results with normalized scores [0, 1]
+   560+          """
+   561+          results = []
+   562+
+   563+          for chunk in candidates:
+   564+              score = 0.0
+   565+              chunk_tf = tf_data.get(chunk.chunk_id, {})
+   566+
+   567+              for term in parsed.stems:
+   568+                  # IDF with smoothing (from all implementations)
+   569+                  df = df_data.get(term, 0)
+   570+                  idf = math.log((corpus_stats.n_chunks - df + 0.5) / (df + 0.5) + 1.0)
+   571+
+   572+                  # TF component
+   573+                  tf = chunk_tf.get(term, 0)
+   574+                  tf_component = (tf * (self.K1 + 1)) / (
+   575+                      tf + self.K1 * (1 - self.B + self.B * chunk.token_count / corpus_stats.avgdl)
+   576+                  )
+   577+
+   578+                  # Synonym boost (from all implementations)
+   579+                  boost = self.SYNONYM_BOOST if term in parsed.synonym_terms else 1.0
+   580+
+   581+                  score += idf * tf_component * boost
+   582+
+   583+              results.append(ScoredResult(chunk=chunk, score=score))
+   584+
+   585+          # Min-max normalization (from Lovable + Claude)
+   586+          return self._normalize_scores(results)
+   587+
+   588+      def _normalize_scores(self, results: List[ScoredResult]) -> List[ScoredResult]:
+   589+          """Normalize scores to [0, 1] range"""
+   590+          if not results:
+   591+              return results
+   592+
+   593+          scores = [r.score for r in results]
+   594+          min_score = min(scores)
+   595+          max_score = max(scores)
+   596+
+   597+          if max_score == min_score:
+   598+              for r in results:
+   599+                  r.normalized_score = 1.0
+   600+          else:
+   601+              for r in results:
+   602+                  r.normalized_score = (r.score - min_score) / (max_score - min_score)
+   603+
+   604+          return sorted(results, key=lambda r: r.normalized_score, reverse=True)
+   605+  ```
+   606+
+   607+  **Key Improvements:**
+   608+  - Fixed N+1 query problem with batch fetching
+   609+  - Proper filter handling in all code paths
+   610+  - Intent-aware query parsing from Vibestral
+   611+  - Configurable BM25 parameters
+   612+  - Synonym boost integration
+   613+  - Min-max score normalization
+   614+
+   615+  ---
+   616+
+   617+  ### Layer 6: User Interface System
+   618+
+   619+  **Goal:** Responsive, intuitive UI with excellent feedback
+   620+
+   621+  **Integration Strategy:**
+   622+  - Base on **Lovable's** three-tab architecture
+   623+  - Integrate **Kimi's** superior progress indicators and status feedback
+   624+  - Adopt **Vibestral 1's** keyboard shortcuts and UX polish
+   625+  - Fix **global MouseWheel binding bug** from Devin review
+   626+  - Add **Claude's** theme system improvements
+   627+
+   628+  **Unified UI Architecture:**
+   629+
+   630+  ```python
+   631+  class UnifiedPDFIntelligenceUI:
+   632+      """Three-tab Tkinter application with worker threads"""
+   633+
+   634+      def __init__(self, root):
+   635+          self.root = root
+   636+          self.root.title("PDF Intelligence — Unified Edition")
+   637+          self.root.geometry("1200x800")
+   638+
+   639+          # Worker thread communication (from Lovable + Kimi improvements)
+   640+          self.task_queue = queue.Queue()
+   641+          self.result_queue = queue.Queue()
+   642+          self.worker_thread = None
+   643+
+   644+          # Application state
+   645+          self.current_theme = "light"
+   646+          self.search_history = []
+   647+          self.active_filters = {}
+   648+
+   649+          # Create UI
+   650+          self._create_menu_bar()
+   651+          self._create_tabs()
+   652+          self._setup_keybindings()
+   653+          self._start_worker()
+   654+          self._start_result_poller()
+   655+
+   656+      def _create_tabs(self):
+   657+          """Create three-tab interface"""
+   658+          notebook = ttk.Notebook(self.root)
+   659+          notebook.pack(fill=tk.BOTH, expand=True)
+   660+
+   661+          # Tab 1: Library (from Lovable + Kimi improvements)
+   662+          self.library_tab = self._create_library_tab(notebook)
+   663+
+   664+          # Tab 2: Search (from all implementations)
+   665+          self.search_tab = self._create_search_tab(notebook)
+   666+
+   667+          # Tab 3: Tools (from Lovable + Claude)
+   668+          self.tools_tab = self._create_tools_tab(notebook)
+   669+
+   670+          notebook.add(self.library_tab, text="📚 Library")
+   671+          notebook.add(self.search_tab, text="🔍 Search")
+   672+          notebook.add(self.tools_tab, text="🛠️ Tools")
+   673+
+   674+      def _create_search_tab(self, parent):
+   675+          """Search interface with facets and results"""
+   676+          frame = ttk.Frame(parent)
+   677+
+   678+          # Search bar with history dropdown (from Kimi + Vibestral)
+   679+          search_frame = self._create_search_bar(frame)
+   680+          search_frame.pack(fill=tk.X, padx=10, pady=10)
+   681+
+   682+          # Main content area
+   683+          content = ttk.PanedWindow(frame, orient=tk.HORIZONTAL)
+   684+          content.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+   685+
+   686+          # Left: Facet sidebar (from Lovable + Vibestral 2)
+   687+          facet_frame = self._create_facet_sidebar(content)
+   688+          content.add(facet_frame, weight=1)
+   689+
+   690+          # Right: Results area (from all implementations)
+   691+          results_frame = self._create_results_area(content)
+   692+          content.add(results_frame, weight=4)
+   693+
+   694+          return frame
+   695+
+   696+      def _create_results_area(self, parent):
+   697+          """Scrollable results with cards"""
+   698+          frame = ttk.Frame(parent)
+   699+
+   700+          # Canvas + scrollbar (from Lovable)
+   701+          canvas = tk.Canvas(frame, highlightthickness=0)
+   702+          scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=canvas.yview)
+   703+
+   704+          # FIX: Use bind() on canvas, not bind_all() (from Devin review)
+   705+          canvas.configure(yscrollcommand=scrollbar.set)
+   706+          canvas.bind("<MouseWheel>", lambda e: canvas.yview_scroll(-1 * (e.delta // 120), "units"))
+   707+
+   708+          # Results container
+   709+          self.results_container = ttk.Frame(canvas)
+   710+          canvas.create_window((0, 0), window=self.results_container, anchor=tk.NW)
+   711+
+   712+          canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+   713+          scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+   714+
+   715+          return frame
+   716+  ```
+   717+
+   718+  **Critical Bug Fix: Global MouseWheel Binding (from Devin review)**
+   719+
+   720+  ```python
+   721+  # BROKEN (Lovable current):
+   722+  self.results_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+   723+  # Captures scroll events EVERYWHERE in the app!
+   724+
+   725+  # FIXED (integrated approach):
+   726+  self.results_canvas.bind("<MouseWheel>", self._on_mousewheel)
+   727+  # Only captures scroll when mouse is over the canvas
+   728+  ```
+   729+
+   730+  **Progress Feedback System (from Kimi + improvements):**
+   731+
+   732+  ```python
+   733+  class ProgressIndicator:
+   734+      """Rich progress feedback for long operations"""
+   735+
+   736+      def __init__(self, parent):
+   737+          self.frame = ttk.Frame(parent)
+   738+
+   739+          # Progress bar (from Kimi)
+   740+          self.progress = ttk.Progressbar(self.frame, mode='determinate')
+   741+          self.progress.pack(fill=tk.X, pady=(0, 5))
+   742+
+   743+          # Status label with file name (from Kimi)
+   744+          self.status_label = ttk.Label(self.frame, text="")
+   745+          self.status_label.pack(fill=tk.X)
+   746+
+   747+          # Statistics (from Claude)
+   748+          self.stats_label = ttk.Label(self.frame, text="")
+   749+          self.stats_label.pack(fill=tk.X)
+   750+
+   751+          # Cancel button (from Lovable)
+   752+          self.cancel_btn = ttk.Button(self.frame, text="Cancel", command=self.cancel)
+   753+          self.cancel_btn.pack(pady=(5, 0))
+   754+
+   755+      def update(self, current: int, total: int, message: str, stats: Dict[str, int]):
+   756+          """Update progress with rich information"""
+   757+          self.progress['value'] = (current / total) * 100
+   758+          self.status_label['text'] = f"[{current}/{total}] {message}"
+   759+          self.stats_label['text'] = (
+   760+              f"✓ {stats['success']} indexed  "
+   761+              f"⚠ {stats['failed']} failed  "
+   762+              f"⏭ {stats['skipped']} skipped"
+   763+          )
+   764+  ```
+   765+
+   766+  **Keyboard Shortcuts (from Vibestral 1 + additions):**
+   767+
+   768+  ```python
+   769+  def _setup_keybindings(self):
+   770+      """Comprehensive keyboard shortcuts"""
+   771+      bindings = {
+   772+          '<Control-o>': self.add_files,
+   773+          '<Control-Shift-O>': self.add_folder,
+   774+          '<Control-f>': self.focus_search,
+   775+          '<Control-l>': self.clear_search,
+   776+          '<Control-h>': self.show_history,
+   777+          '<Control-comma>': self.show_settings,
+   778+          '<Control-q>': self.quit_app,
+   779+          '<F1>': self.show_help,
+   780+          '<F5>': self.refresh_library,
+   781+          '<Escape>': self.cancel_operation,
+   782+      }
+   783+
+   784+      for key, handler in bindings.items():
+   785+          self.root.bind(key, lambda e, h=handler: h())
+   786+  ```
+   787+
+   788+  **Theme System (from Claude + Lovable):**
+   789+
+   790+  ```python
+   791+  class ThemeManager:
+   792+      """Light/dark theme support"""
+   793+
+   794+      THEMES = {
+   795+          'light': {
+   796+              'bg': '#ffffff',
+   797+              'fg': '#000000',
+   798+              'select_bg': '#0078d7',
+   799+              'select_fg': '#ffffff',
+   800+              'card_bg': '#f5f5f5',
+   801+              'border': '#cccccc',
+   802+          },
+   803+          'dark': {
+   804+              'bg': '#1e1e1e',
+   805+              'fg': '#d4d4d4',
+   806+              'select_bg': '#0e639c',
+   807+              'select_fg': '#ffffff',
+   808+              'card_bg': '#2d2d2d',
+   809+              'border': '#3e3e3e',
+   810+          }
+   811+      }
+   812+
+   813+      def apply_theme(self, root, theme_name: str):
+   814+          """Apply theme to all widgets"""
+   815+          theme = self.THEMES[theme_name]
+   816+
+   817+          # Configure ttk styles
+   818+          style = ttk.Style()
+   819+          style.theme_use('clam')
+   820+
+   821+          # Apply colors to all widget types
+   822+          for widget_type in ['TFrame', 'TLabel', 'TButton', 'TEntry']:
+   823+              style.configure(widget_type,
+   824+                            background=theme['bg'],
+   825+                            foreground=theme['fg'])
+   826+
+   827+          # Configure tk widgets
+   828+          root.configure(bg=theme['bg'])
+   829+  ```
+   830+
+   831+  **Key Improvements:**
+   832+  - Fixed global MouseWheel binding bug
+   833+  - Rich progress feedback from Kimi
+   834+  - Comprehensive keyboard shortcuts from Vibestral
+   835+  - Theme system from Claude
+   836+  - Responsive worker thread architecture from Lovable
+   837+  - Better error messaging and user feedback
+● Write
+● Write C:\tmp\pdf-app-analysis\Unification Strategies\Codex's Suggested Plan - Deep Integration.md
+  added 403 lines at L840 in C:\tmp\pdf-app-analysis\Unification Strategies\Codex's Suggested Plan - Deep Integration.md
+   840+
+   841+  ---
+   842+
+   843+  ### Layer 7: Command-Line Interface
+   844+
+   845+  **Goal:** Feature-complete CLI with machine-readable output
+   846+
+   847+  **Integration Strategy:**
+   848+  - Base on **Lovable's** CLI architecture
+   849+  - Add **JSON output** for automation (from external references)
+   850+  - Ensure **behavioral parity** with GUI (critical requirement)
+   851+
+   852+  **Unified CLI:**
+   853+
+   854+  ```python
+   855+  class UnifiedCLI:
+   856+      """Command-line interface with JSON output support"""
+   857+
+   858+      def __init__(self):
+   859+          self.parser = self._build_parser()
+   860+
+   861+      def _build_parser(self):
+   862+          """Build argument parser"""
+   863+          parser = argparse.ArgumentParser(
+   864+              prog='pdf-intelligence',
+   865+              description='Offline PDF/EPUB search and indexing'
+   866+          )
+   867+          parser.add_argument('--version', action='version', version=APP_VERSION)
+   868+          parser.add_argument('--json', action='store_true',
+   869+                            help='Output results as JSON')
+   870+
+   871+          subparsers = parser.add_subparsers(dest='command')
+   872+
+   873+          # Index command
+   874+          index_parser = subparsers.add_parser('index',
+   875+                                              help='Index files or folders')
+   876+          index_parser.add_argument('paths', nargs='+',
+   877+                                   help='Files or folders to index')
+   878+          index_parser.add_argument('--ocr', action='store_true',
+   879+                                   help='Enable OCR for scanned PDFs')
+   880+          index_parser.add_argument('--force', action='store_true',
+   881+                                   help='Force reindex even if unchanged')
+   882+
+   883+          # Search command
+   884+          search_parser = subparsers.add_parser('search',
+   885+                                               help='Search indexed documents')
+   886+          search_parser.add_argument('query', help='Search query')
+   887+          search_parser.add_argument('--limit', type=int, default=20,
+   888+                                    help='Maximum results to return')
+   889+          search_parser.add_argument('--type', choices=['pdf', 'epub'],
+   890+                                    help='Filter by file type')
+   891+          search_parser.add_argument('--year', type=int,
+   892+                                    help='Filter by year')
+   893+          search_parser.add_argument('--author', help='Filter by author')
+   894+
+   895+          # List command
+   896+          list_parser = subparsers.add_parser('list',
+   897+                                             help='List indexed documents')
+   898+          list_parser.add_argument('--type', choices=['pdf', 'epub'],
+   899+                                  help='Filter by file type')
+   900+
+   901+          # Stats command
+   902+          stats_parser = subparsers.add_parser('stats',
+   903+                                              help='Show index statistics')
+   904+
+   905+          # Remove command
+   906+          remove_parser = subparsers.add_parser('remove',
+   907+                                               help='Remove documents from index')
+   908+          remove_parser.add_argument('ids', nargs='+', type=int,
+   909+                                    help='Document IDs to remove')
+   910+
+   911+          return parser
+   912+
+   913+      def run(self, argv: List[str]) -> int:
+   914+          """Execute CLI command"""
+   915+          args = self.parser.parse_args(argv)
+   916+
+   917+          # Ensure data directory exists
+   918+          DATA_DIR.mkdir(parents=True, exist_ok=True)
+   919+          conn = open_db(DB_PATH)
+   920+
+   921+          try:
+   922+              if args.command == 'index':
+   923+                  return self._cmd_index(conn, args)
+   924+              elif args.command == 'search':
+   925+                  return self._cmd_search(conn, args)
+   926+              elif args.command == 'list':
+   927+                  return self._cmd_list(conn, args)
+   928+              elif args.command == 'stats':
+   929+                  return self._cmd_stats(conn, args)
+   930+              elif args.command == 'remove':
+   931+                  return self._cmd_remove(conn, args)
+   932+              else:
+   933+                  self.parser.print_help()
+   934+                  return 2
+   935+          finally:
+   936+              conn.close()
+   937+
+   938+      def _cmd_search(self, conn, args):
+   939+          """Execute search command"""
+   940+          # Build filters from args
+   941+          filters = {}
+   942+          if args.type:
+   943+              filters['file_type'] = args.type
+   944+          if args.year:
+   945+              filters['year'] = args.year
+   946+          if args.author:
+   947+              filters['author'] = args.author
+   948+
+   949+          # Execute search (same function as GUI!)
+   950+          response = searcher.search(conn, args.query, filters, limit=args.limit)
+   951+
+   952+          # Output results
+   953+          if args.json:
+   954+              self._output_json(response)
+   955+          else:
+   956+              self._output_text(response)
+   957+
+   958+          return 0
+   959+
+   960+      def _output_json(self, response: SearchResponse):
+   961+          """Output results as JSON for automation"""
+   962+          output = {
+   963+              'query': response.query,
+   964+              'elapsed_ms': response.elapsed_ms,
+   965+              'result_count': len(response.results),
+   966+              'results': [
+   967+                  {
+   968+                      'doc_id': r.doc_id,
+   969+                      'chunk_id': r.chunk_id,
+   970+                      'title': r.title,
+   971+                      'file_path': str(r.file_path),
+   972+                      'page_num': r.page_num,
+   973+                      'section_header': r.section_header,
+   974+                      'snippet': r.snippet,
+   975+                      'score': r.score,
+   976+                  }
+   977+                  for r in response.results
+   978+              ],
+   979+              'facets': response.facets,
+   980+          }
+   981+          print(json.dumps(output, indent=2))
+   982+
+   983+      def _output_text(self, response: SearchResponse):
+   984+          """Output results as human-readable text"""
+   985+          print(f"\n{len(response.results)} result(s) in {response.elapsed_ms:.1f} ms\n")
+   986+
+   987+          for i, result in enumerate(response.results, 1):
+   988+              print(f"[{i}] {result.title}")
+   989+              print(f"    📄 {result.file_path}")
+   990+              print(f"    📍 Page {result.page_num}")
+   991+              if result.section_header:
+   992+                  print(f"    📑 {result.section_header}")
+   993+              print(f"    ⭐ Score: {result.score:.3f}")
+   994+              print(f"    {result.snippet}")
+   995+              print()
+   996+  ```
+   997+
+   998+  **Key Improvements:**
+   999+  - JSON output for automation and scripting
+  1000+  - Behavioral parity with GUI (same search function)
+  1001+  - Comprehensive filter support
+  1002+  - Machine-readable exit codes
+  1003+  - Rich text output with Unicode icons
+  1004+
+  1005+  ---
+  1006+
+  1007+  ## Testing Strategy: Comprehensive Quality Assurance
+  1008+
+  1009+  **Goal:** Maximum test coverage combining all test suites
+  1010+
+  1011+  **Integration Strategy:**
+  1012+  - Combine test cases from **Lovable**, **Claude**, **Qwen**, and **Vibestral**
+  1013+  - Add **regression tests** for all identified bugs
+  1014+  - Create **golden query set** for relevance testing
+  1015+  - Add **property-based tests** for invariants
+  1016+
+  1017+  **Unified Test Suite:**
+  1018+
+  1019+  ```python
+  1020+  # tests/test_extraction.py
+  1021+  class TestExtraction(unittest.TestCase):
+  1022+      """Test document extraction pipeline"""
+  1023+
+  1024+      def test_pdf_text_extraction(self):
+  1025+          """Test PDF text extraction with pdfplumber"""
+  1026+          # From Lovable + Claude
+  1027+
+  1028+      def test_pdf_fallback_to_pypdf(self):
+  1029+          """Test fallback when pdfplumber fails"""
+  1030+          # From Claude
+  1031+
+  1032+      def test_epub_extraction(self):
+  1033+          """Test EPUB extraction"""
+  1034+          # From Lovable
+  1035+
+  1036+      def test_corrupted_pdf_handling(self):
+  1037+          """Test graceful handling of corrupted PDFs"""
+  1038+          # From Claude + Devin review
+  1039+
+  1040+      def test_encrypted_pdf_handling(self):
+  1041+          """Test handling of encrypted PDFs"""
+  1042+          # From Claude
+  1043+
+  1044+  # tests/test_chunking.py
+  1045+  class TestChunking(unittest.TestCase):
+  1046+      """Test semantic chunking"""
+  1047+
+  1048+      def test_layered_chunking(self):
+  1049+          """Test 4-layer chunking pipeline"""
+  1050+          # From Lovable
+  1051+
+  1052+      def test_character_position_tracking(self):
+  1053+          """Test accurate character position tracking"""
+  1054+          # REGRESSION TEST for Devin bug #5
+  1055+          text = "First sentence. Second sentence. Third sentence."
+  1056+          chunks = chunk_page(PageText(1, text, None))
+  1057+
+  1058+          for chunk in chunks:
+  1059+              # Verify positions are accurate
+  1060+              extracted = text[chunk.start_char:chunk.end_char]
+  1061+              self.assertEqual(extracted, chunk.content)
+  1062+
+  1063+      def test_chunk_id_stability(self):
+  1064+          """Test that chunk IDs are stable across re-indexing"""
+  1065+          # From Lovable + Claude
+  1066+
+  1067+      def test_cross_page_linking(self):
+  1068+          """Test prev_id/next_id wiring across pages"""
+  1069+          # From Lovable
+  1070+
+  1071+  # tests/test_search.py
+  1072+  class TestSearch(unittest.TestCase):
+  1073+      """Test search and retrieval"""
+  1074+
+  1075+      def test_basic_search(self):
+  1076+          """Test basic keyword search"""
+  1077+          # From all implementations
+  1078+
+  1079+      def test_phrase_search(self):
+  1080+          """Test exact phrase matching"""
+  1081+          # From Lovable + Vibestral
+  1082+
+  1083+      def test_filters_in_fuzzy_fallback(self):
+  1084+          """Test that filters are applied in fuzzy fallback"""
+  1085+          # REGRESSION TEST for Devin bug #1 (HIGH severity)
+  1086+
+  1087+          # Index documents of different types
+  1088+          index_file(conn, "doc1.pdf", ...)
+  1089+          index_file(conn, "doc2.epub", ...)
+  1090+
+  1091+          # Search with typo and filter
+  1092+          response = search(conn, "neual netwroks", {'file_type': 'pdf'})
+  1093+
+  1094+          # Verify filter was applied even in fallback
+  1095+          for result in response.results:
+  1096+              self.assertEqual(result.file_type, 'pdf')
+  1097+
+  1098+      def test_year_filter_validation(self):
+  1099+          """Test year filter input validation"""
+  1100+          # REGRESSION TEST for Devin bug #3 (MEDIUM severity)
+  1101+
+  1102+          # Should not raise ValueError
+  1103+          response = search(conn, "test", {'year': 'invalid'})
+  1104+          # Should either ignore invalid filter or return error
+  1105+
+  1106+      def test_bm25_batch_fetching(self):
+  1107+          """Test that BM25 uses batch queries, not N+1"""
+  1108+          # REGRESSION TEST for Kimi bug (HIGH severity)
+  1109+
+  1110+          with QueryCounter(conn) as counter:
+  1111+              response = search(conn, "machine learning", limit=20)
+  1112+
+  1113+          # Should be ~3-5 queries total, not 200+
+  1114+          self.assertLess(counter.count, 10)
+  1115+
+  1116+      def test_synonym_expansion(self):
+  1117+          """Test synonym expansion in search"""
+  1118+          # From all implementations
+  1119+
+  1120+      def test_intent_detection(self):
+  1121+          """Test query intent detection"""
+  1122+          # From Vibestral 1
+  1123+
+  1124+  # tests/test_bm25.py
+  1125+  class TestBM25(unittest.TestCase):
+  1126+      """Test BM25 scoring"""
+  1127+
+  1128+      def test_bm25_calculation(self):
+  1129+          """Test BM25 score calculation"""
+  1130+          # From Lovable + Qwen
+  1131+
+  1132+      def test_score_normalization(self):
+  1133+          """Test min-max score normalization"""
+  1134+          # From Lovable + Claude
+  1135+
+  1136+      def test_synonym_boost(self):
+  1137+          """Test synonym boost application"""
+  1138+          # From all implementations
+  1139+
+  1140+  # tests/test_indexing.py
+  1141+  class TestIndexing(unittest.TestCase):
+  1142+      """Test indexing operations"""
+  1143+
+  1144+      def test_incremental_indexing(self):
+  1145+          """Test that unchanged files are skipped"""
+  1146+          # From Lovable + Claude
+  1147+
+  1148+      def test_transaction_safety(self):
+  1149+          """Test transaction rollback on error"""
+  1150+          # REGRESSION TEST for Devin bug #4 (MEDIUM severity)
+  1151+
+  1152+          # Simulate error during indexing
+  1153+          with self.assertRaises(Exception):
+  1154+              index_file(conn, "corrupted.pdf")
+  1155+
+  1156+          # Verify database is still consistent
+  1157+          # No partial chunks should be inserted
+  1158+
+  1159+      def test_term_df_rebuild(self):
+  1160+          """Test term_df rebuild after batch indexing"""
+  1161+          # From Lovable + Qwen
+  1162+
+  1163+      def test_cascade_delete(self):
+  1164+          """Test that deleting document cascades to chunks"""
+  1165+          # From Qwen + schema improvements
+  1166+
+  1167+  # tests/test_ui.py
+  1168+  class TestUI(unittest.TestCase):
+  1169+      """Test UI components"""
+  1170+
+  1171+      def test_mousewheel_binding(self):
+  1172+          """Test that mousewheel only affects target widget"""
+  1173+          # REGRESSION TEST for Devin bug #7 (LOW severity)
+  1174+
+  1175+          # Create UI
+  1176+          root = tk.Tk()
+  1177+          app = UnifiedPDFIntelligenceUI(root)
+  1178+
+  1179+          # Verify bind() used, not bind_all()
+  1180+          # (This is a structural test)
+  1181+
+  1182+      def test_progress_updates(self):
+  1183+          """Test progress indicator updates"""
+  1184+          # From Kimi + Lovable
+  1185+
+  1186+      def test_theme_switching(self):
+  1187+          """Test light/dark theme switching"""
+  1188+          # From Claude + Lovable
+  1189+
+  1190+  # tests/test_golden_queries.py
+  1191+  class TestGoldenQueries(unittest.TestCase):
+  1192+      """Test search relevance with golden query set"""
+  1193+
+  1194+      @classmethod
+  1195+      def setUpClass(cls):
+  1196+          """Index test corpus"""
+  1197+          cls.conn = open_db(':memory:')
+  1198+          # Index a fixed set of documents
+  1199+          index_file(cls.conn, "test_corpus/ml_paper.pdf")
+  1200+          index_file(cls.conn, "test_corpus/history_book.epub")
+  1201+          # ... more test documents
+  1202+
+  1203+      def test_golden_query_1(self):
+  1204+          """Test: 'neural networks' should find ML paper first"""
+  1205+          response = search(self.conn, "neural networks", limit=10)
+  1206+          self.assertEqual(response.results[0].title, "Machine Learning Paper")
+  1207+
+  1208+      def test_golden_query_2(self):
+  1209+          """Test: 'world war' should find history book first"""
+  1210+          response = search(self.conn, "world war", limit=10)
+  1211+          self.assertEqual(response.results[0].title, "History Book")
+  1212+
+  1213+      # ... more golden queries
+  1214+
+  1215+  # tests/test_properties.py
+  1216+  class TestProperties(unittest.TestCase):
+  1217+      """Property-based tests for invariants"""
+  1218+
+  1219+      def test_chunk_coverage(self):
+  1220+          """Property: All text should be covered by chunks"""
+  1221+          # For any document, union of all chunk content should equal original text
+  1222+
+  1223+      def test_chunk_overlap(self):
+  1224+          """Property: Adjacent chunks should have expected overlap"""
+  1225+          # For any adjacent chunks, overlap should be ~32 tokens
+  1226+
+  1227+      def test_search_determinism(self):
+  1228+          """Property: Same query should return same results"""
+  1229+          # For any query, running twice should give identical results
+  1230+
+  1231+      def test_score_ordering(self):
+  1232+          """Property: Results should be ordered by score"""
+  1233+          # For any search, result[i].score >= result[i+1].score
+  1234+  ```
+  1235+
+  1236+  **Test Coverage Goals:**
+  1237+  - **Unit tests**: 80%+ coverage of all modules
+  1238+  - **Integration tests**: End-to-end flows (index → search → display)
+  1239+  - **Regression tests**: All bugs from Devin review
+  1240+  - **Golden queries**: Relevance testing on fixed corpus
+  1241+  - **Property tests**: Invariant checking
+  1242+  - **Performance tests**: Latency and memory benchmarks
+● Write C:\tmp\pdf-app-analysis\Unification Strategies\Codex's Suggested Plan - Deep Integration.md
+  added 463 lines at L1245 in C:\tmp\pdf-app-analysis\Unification Strategies\Codex's Suggested Plan - Deep
+  1245+
+  1246+  ---
+  1247+
+  1248+  ## Implementation Roadmap: Phased Integration
+  1249+
+  1250+  ### Phase 0: Foundation & Planning (Week 1)
+  1251+
+  1252+  **Objectives:**
+  1253+  - Establish unified repository structure
+  1254+  - Create comprehensive test harness
+  1255+  - Set up CI/CD pipeline
+  1256+  - Document all integration decisions
+  1257+
+  1258+  **Tasks:**
+  1259+  1. Create new `unified/` directory with clean structure:
+  1260+     ```
+  1261+     unified/
+  1262+     ├── src/
+  1263+     │   ├── core/          # Extraction, chunking, tokenization
+  1264+     │   ├── index/         # Database, schema, indexing
+  1265+     │   ├── search/        # Query parsing, BM25, retrieval
+  1266+     │   ├── ui/            # GUI components
+  1267+     │   ├── cli/           # CLI interface
+  1268+     │   └── utils/         # Shared utilities
+  1269+     ├── tests/
+  1270+     │   ├── unit/
+  1271+     │   ├── integration/
+  1272+     │   ├── regression/
+  1273+     │   └── golden/
+  1274+     ├── docs/
+  1275+     │   ├── architecture.md
+  1276+     │   ├── api.md
+  1277+     │   └── integration_decisions.md
+  1278+     ├── data/
+  1279+     │   └── synonyms.json
+  1280+     └── setup.py
+  1281+     ```
+  1282+
+  1283+  2. Set up test infrastructure:
+  1284+     - pytest configuration
+  1285+     - Coverage reporting
+  1286+     - Golden query corpus
+  1287+     - Performance benchmarking harness
+  1288+
+  1289+  3. Create integration decision log (ADR format):
+  1290+     - Document why each choice was made
+  1291+     - Track which implementation contributed what
+  1292+     - Record rejected alternatives
+  1293+
+  1294+  **Deliverables:**
+  1295+  - Clean repository structure
+  1296+  - Test harness with 0 tests (ready to add)
+  1297+  - CI/CD pipeline configuration
+  1298+  - Integration decision log template
+  1299+
+  1300+  ---
+  1301+
+  1302+  ### Phase 1: Core Layer Integration (Week 2-3)
+  1303+
+  1304+  **Objectives:**
+  1305+  - Integrate extraction pipeline
+  1306+  - Unify text processing
+  1307+  - Implement semantic chunking with bug fixes
+  1308+
+  1309+  **Tasks:**
+  1310+
+  1311+  1. **Document Extraction (src/core/extraction.py)**
+  1312+     - Base: Lovable's extractor interface
+  1313+     - Add: Claude's error handling
+  1314+     - Add: Kimi's progress callbacks
+  1315+     - Add: Extraction confidence scoring
+  1316+     - Tests: 20+ unit tests covering all formats and fallbacks
+  1317+
+  1318+  2. **Text Processing (src/core/text_processor.py)**
+  1319+     - Base: Lovable's normalization
+  1320+     - Add: Vibestral's advanced tokenizer
+  1321+     - Add: Lazy NLTK loading from Claude
+  1322+     - Add: Language detection hooks
+  1323+     - Tests: 15+ unit tests for tokenization, stemming, normalization
+  1324+
+  1325+  3. **Semantic Chunking (src/core/chunker.py)**
+  1326+     - Base: Lovable's 4-layer chunker
+  1327+     - **FIX**: Character position tracking bug (Devin #5)
+  1328+     - Add: Vibestral 2's section header detection
+  1329+     - Add: Qwen's memory optimizations
+  1330+     - Tests: 25+ unit tests including regression test for position tracking
+  1331+
+  1332+  **Acceptance Criteria:**
+  1333+  - All extraction formats work with fallbacks
+  1334+  - Character positions are accurate (regression test passes)
+  1335+  - Chunk IDs are stable across re-indexing
+  1336+  - Memory usage stays under 150MB for 1000-page PDF
+  1337+  - Test coverage > 85% for core layer
+  1338+
+  1339+  ---
+  1340+
+  1341+  ### Phase 2: Storage & Indexing Integration (Week 4-5)
+  1342+
+  1343+  **Objectives:**
+  1344+  - Implement unified database schema
+  1345+  - Fix transaction safety issues
+  1346+  - Optimize indexing performance
+  1347+
+  1348+  **Tasks:**
+  1349+
+  1350+  1. **Database Schema (src/index/schema.py)**
+  1351+     - Base: Lovable's schema
+  1352+     - Add: Qwen's performance indexes
+  1353+     - Add: extraction_method tracking
+  1354+     - Add: Proper CASCADE deletes
+  1355+     - Migration: Version 1 → Version 2 upgrade path
+  1356+
+  1357+  2. **Indexing Engine (src/index/indexer.py)**
+  1358+     - Base: Lovable's indexer
+  1359+     - **FIX**: Transaction safety (Devin #4) — use context managers
+  1360+     - Add: Qwen's batch insert optimizations
+  1361+     - Add: Claude's robust error handling
+  1362+     - Add: Parallel page extraction option
+  1363+     - Tests: 30+ unit tests including transaction rollback test
+  1364+
+  1365+  3. **Database Configuration (src/index/migrations.py)**
+  1366+     - Base: Claude's migration system
+  1367+     - Add: Vibestral 2's production pragmas
+  1368+     - Add: Schema versioning
+  1369+     - Add: Automatic migration on startup
+  1370+     - Tests: Migration tests from v1 → v2
+  1371+
+  1372+  **Acceptance Criteria:**
+  1373+  - Transaction rollback works correctly (regression test passes)
+  1374+  - Indexing speed: 500-page PDF in < 45 seconds
+  1375+  - Incremental re-indexing skips unchanged files
+  1376+  - Database migrations work forward and backward
+  1377+  - Test coverage > 80% for index layer
+  1378+
+  1379+  ---
+  1380+
+  1381+  ### Phase 3: Search & Retrieval Integration (Week 6-7)
+  1382+
+  1383+  **Objectives:**
+  1384+  - Implement unified search pipeline
+  1385+  - Fix all search-related bugs
+  1386+  - Optimize query performance
+  1387+
+  1388+  **Tasks:**
+  1389+
+  1390+  1. **Query Parser (src/search/query_parser.py)**
+  1391+     - Base: Lovable's parser
+  1392+     - Add: Vibestral 1's intent detection
+  1393+     - Add: Query shortcuts (define:, compare:, example:)
+  1394+     - Add: Better filter extraction
+  1395+     - Tests: 20+ unit tests for all query types
+  1396+
+  1397+  2. **BM25 Scorer (src/search/bm25.py)**
+  1398+     - Base: Lovable's BM25
+  1399+     - **FIX**: Use batch queries (Kimi N+1 bug)
+  1400+     - Add: Codex's clean separation
+  1401+     - Add: Configurable parameters
+  1402+     - Add: Score breakdown for debugging
+  1403+     - Tests: 15+ unit tests including batch query test
+  1404+
+  1405+  3. **Search Engine (src/search/searcher.py)**
+  1406+     - Base: Lovable's two-phase architecture
+  1407+     - **FIX**: Apply filters in fuzzy fallback (Devin #1 HIGH)
+  1408+     - **FIX**: Validate year filter (Devin #3 MEDIUM)
+  1409+     - Add: Vibestral's intent-aware search
+  1410+     - Add: Result snippet optimization
+  1411+     - Tests: 40+ unit tests including both regression tests
+  1412+
+  1413+  4. **Faceted Search (src/search/facets.py)**
+  1414+     - Base: Lovable's facets
+  1415+     - Add: Vibestral 2's production patterns
+  1416+     - Add: Dynamic facet generation
+  1417+     - Tests: 10+ unit tests
+  1418+
+  1419+  **Acceptance Criteria:**
+  1420+  - Filters work in ALL code paths (regression test passes)
+  1421+  - Year filter validation works (regression test passes)
+  1422+  - BM25 uses < 10 queries per search (regression test passes)
+  1423+  - Search latency < 100ms for 10k-chunk index
+  1424+  - Golden query tests pass with > 90% relevance
+  1425+  - Test coverage > 85% for search layer
+  1426+
+  1427+  ---
+  1428+
+  1429+  ### Phase 4: User Interface Integration (Week 8-9)
+  1430+
+  1431+  **Objectives:**
+  1432+  - Create unified GUI
+  1433+  - Fix UI bugs
+  1434+  - Implement excellent UX
+  1435+
+  1436+  **Tasks:**
+  1437+
+  1438+  1. **Main Application (src/ui/app_ui.py)**
+  1439+     - Base: Lovable's three-tab architecture
+  1440+     - Add: Kimi's progress indicators
+  1441+     - Add: Vibestral's keyboard shortcuts
+  1442+     - **FIX**: MouseWheel binding (Devin #7)
+  1443+     - Add: Claude's theme system
+  1444+     - Tests: 15+ UI tests
+  1445+
+  1446+  2. **Search Interface (src/ui/search_tab.py)**
+  1447+     - Base: Lovable's search tab
+  1448+     - Add: Kimi's search history dropdown
+  1449+     - Add: Vibestral's facet sidebar
+  1450+     - Add: Rich result cards
+  1451+     - Tests: 10+ UI tests
+  1452+
+  1453+  3. **Library Interface (src/ui/library_tab.py)**
+  1454+     - Base: Lovable's library tab
+  1455+     - Add: Kimi's status indicators
+  1456+     - Add: Batch operations
+  1457+     - Tests: 8+ UI tests
+  1458+
+  1459+  4. **Tools Interface (src/ui/tools_tab.py)**
+  1460+     - Base: Lovable's tools tab
+  1461+     - Add: OCR status detection
+  1462+     - Add: EPUB conversion
+  1463+     - Tests: 5+ UI tests
+  1464+
+  1465+  **Acceptance Criteria:**
+  1466+  - MouseWheel only scrolls target widget (regression test passes)
+  1467+  - All keyboard shortcuts work
+  1468+  - Progress indicators update smoothly
+  1469+  - Theme switching works without restart
+  1470+  - UI never freezes during long operations
+  1471+  - Test coverage > 70% for UI layer
+  1472+
+  1473+  ---
+  1474+
+  1475+  ### Phase 5: CLI & Automation Integration (Week 10)
+  1476+
+  1477+  **Objectives:**
+  1478+  - Implement feature-complete CLI
+  1479+  - Ensure GUI/CLI behavioral parity
+  1480+  - Add JSON output for automation
+  1481+
+  1482+  **Tasks:**
+  1483+
+  1484+  1. **CLI Interface (src/cli/main.py)**
+  1485+     - Base: Lovable's CLI
+  1486+     - Add: JSON output mode
+  1487+     - Add: All filter options
+  1488+     - Add: Batch operations
+  1489+     - Tests: 20+ CLI tests
+  1490+
+  1491+  2. **Behavioral Parity Tests**
+  1492+     - Create tests that verify GUI and CLI return identical results
+  1493+     - Test all search scenarios
+  1494+     - Test all filter combinations
+  1495+     - Tests: 15+ parity tests
+  1496+
+  1497+  **Acceptance Criteria:**
+  1498+  - CLI supports all GUI features
+  1499+  - JSON output is valid and complete
+  1500+  - GUI and CLI return identical search results (parity tests pass)
+  1501+  - Exit codes are meaningful
+  1502+  - Test coverage > 80% for CLI layer
+  1503+
+  1504+  ---
+  1505+
+  1506+  ### Phase 6: Testing & Quality Assurance (Week 11-12)
+  1507+
+  1508+  **Objectives:**
+  1509+  - Achieve comprehensive test coverage
+  1510+  - Run performance benchmarks
+  1511+  - Fix any remaining issues
+  1512+
+  1513+  **Tasks:**
+  1514+
+  1515+  1. **Test Suite Completion**
+  1516+     - Add missing unit tests to reach 80%+ coverage
+  1517+     - Complete all regression tests
+  1518+     - Expand golden query set to 50+ queries
+  1519+     - Add property-based tests
+  1520+
+  1521+  2. **Performance Benchmarking**
+  1522+     - Index performance: Test with 100, 1000, 10000 page corpus
+  1523+     - Search performance: Test with 1k, 10k, 100k chunk index
+  1524+     - Memory profiling: Ensure < 200MB peak usage
+  1525+     - Startup time: Ensure < 2 seconds cold start
+  1526+
+  1527+  3. **Integration Testing**
+  1528+     - End-to-end workflows
+  1529+     - Error recovery scenarios
+  1530+     - Concurrent operations
+  1531+     - Edge cases from all implementations
+  1532+
+  1533+  4. **Documentation**
+  1534+     - Complete API documentation
+  1535+     - User guide
+  1536+     - Developer guide
+  1537+     - Architecture document
+  1538+
+  1539+  **Acceptance Criteria:**
+  1540+  - Test coverage > 80% overall
+  1541+  - All regression tests pass
+  1542+  - Golden query relevance > 90%
+  1543+  - Performance benchmarks meet targets
+  1544+  - Documentation is complete
+  1545+
+  1546+  ---
+  1547+
+  1548+  ### Phase 7: Packaging & Distribution (Week 13)
+  1549+
+  1550+  **Objectives:**
+  1551+  - Create distributable packages
+  1552+  - Optimize binary size
+  1553+  - Prepare release
+  1554+
+  1555+  **Tasks:**
+  1556+
+  1557+  1. **PyInstaller Configuration (pyinstaller.spec)**
+  1558+     - Base: Lovable's spec
+  1559+     - Add: Aggressive excludes
+  1560+     - Add: UPX compression
+  1561+     - Target: < 30MB compressed
+  1562+
+  1563+  2. **Dependency Optimization**
+  1564+     - Review all dependencies
+  1565+     - Remove unused packages
+  1566+     - Pin versions for reproducibility
+  1567+
+  1568+  3. **Platform Testing**
+  1569+     - Test on Windows 10/11
+  1570+     - Test on macOS (Intel + Apple Silicon)
+  1571+     - Test on Linux (Ubuntu, Fedora)
+  1572+
+  1573+  4. **Release Preparation**
+  1574+     - Create installer scripts
+  1575+     - Write release notes
+  1576+     - Prepare documentation
+  1577+     - Create demo video
+  1578+
+  1579+  **Acceptance Criteria:**
+  1580+  - Binary size < 30MB compressed
+  1581+  - Works on all target platforms
+  1582+  - Installation is straightforward
+  1583+  - Documentation is user-friendly
+  1584+
+  1585+  ---
+  1586+
+  1587+  ## Quality Gates: Integration Checklist
+  1588+
+  1589+  Every integrated component must pass ALL quality gates:
+  1590+
+  1591+  ### ✅ Functional Correctness
+  1592+  - [ ] All unit tests pass
+  1593+  - [ ] All integration tests pass
+  1594+  - [ ] All regression tests pass (bugs from Devin review)
+  1595+  - [ ] Golden query tests pass with > 90% relevance
+  1596+
+  1597+  ### ✅ Performance
+  1598+  - [ ] Search latency < 100ms (10k chunks)
+  1599+  - [ ] Indexing speed < 1 min per 1000 pages
+  1600+  - [ ] Memory usage < 200MB peak
+  1601+  - [ ] Startup time < 2 seconds
+  1602+
+  1603+  ### ✅ Behavioral Parity
+  1604+  - [ ] GUI and CLI return identical results for same inputs
+  1605+  - [ ] All filters work in all code paths
+  1606+  - [ ] No silent failures or ignored parameters
+  1607+
+  1608+  ### ✅ Code Quality
+  1609+  - [ ] Test coverage > 80%
+  1610+  - [ ] No SQL injection vulnerabilities
+  1611+  - [ ] Proper error handling (no bare except)
+  1612+  - [ ] Logging instead of print()
+  1613+  - [ ] Type hints on all public APIs
+  1614+
+  1615+  ### ✅ Documentation
+  1616+  - [ ] API documentation complete
+  1617+  - [ ] Architecture decisions documented
+  1618+  - [ ] Integration sources attributed
+  1619+  - [ ] User guide complete
+  1620+
+  1621+  ### ✅ Offline Guarantee
+  1622+  - [ ] No network dependencies in core functionality
+  1623+  - [ ] All optional features clearly marked
+  1624+  - [ ] Graceful degradation when optional deps missing
+  1625+
+  1626+  ### ✅ Package Size
+  1627+  - [ ] Compressed binary < 30MB
+  1628+  - [ ] Uncompressed < 80MB
+  1629+  - [ ] No unnecessary dependencies
+  1630+
+  1631+  ---
+  1632+
+  1633+  ## Packaging Strategy: Staying Under 30MB
+  1634+
+  1635+  **From Lovable + optimizations:**
+  1636+
+  1637+  ```python
+  1638+  # pyinstaller.spec
+  1639+  a = Analysis(
+  1640+      ['src/main.py'],
+  1641+      pathex=[],
+  1642+      binaries=[],
+  1643+      datas=[
+  1644+          ('data/synonyms.json', 'data'),
+  1645+      ],
+  1646+      hiddenimports=[
+  1647+          'pdfplumber',
+  1648+          'pypdf',
+  1649+          'ebooklib',
+  1650+          'snowballstemmer',
+  1651+      ],
+  1652+      hookspath=[],
+  1653+      hooksconfig={},
+  1654+      runtime_hooks=[],
+  1655+      excludes=[
+  1656+          # Aggressive excludes to stay under 30MB
+  1657+          'numpy', 'scipy', 'pandas', 'matplotlib',
+  1658+          'sklearn', 'torch', 'tensorflow',
+  1659+          'jupyter', 'notebook', 'ipython',
+  1660+          'PyQt5', 'PyQt6', 'PySide2', 'PySide6',
+  1661+          'wx', 'kivy',
+  1662+          'distutils', 'setuptools', 'pip',
+  1663+          'test', 'tests', 'testing',
+  1664+          'unittest', 'doctest',
+  1665+          '_pytest', 'pytest',
+  1666+      ],
+  1667+      win_no_prefer_redirects=False,
+  1668+      win_private_assemblies=False,
+  1669+      cipher=None,
+  1670+      noarchive=False,
+  1671+  )
+  1672+
+  1673+  pyz = PYZ(a.pure, a.zipped_data, cipher=None)
+  1674+
+  1675+  exe = EXE(
+  1676+      pyz,
+  1677+      a.scripts,
+  1678+      a.binaries,
+  1679+      a.zipfiles,
+  1680+      a.datas,
+  1681+      [],
+  1682+      name='pdf-intelligence',
+  1683+      debug=False,
+  1684+      bootloader_ignore_signals=False,
+  1685+      strip=True,  # Strip debug symbols
+  1686+      upx=True,    # UPX compression
+  1687+      upx_exclude=[],
+  1688+      runtime_tmpdir=None,
+  1689+      console=False,  # GUI app
+  1690+      icon='assets/icon.ico',
+  1691+  )
+  1692+  ```
+  1693+
+  1694+  **Size Budget:**
+  1695+  - Python runtime: ~8 MB
+  1696+  - Tkinter: ~2 MB
+  1697+  - pdfplumber + pdfminer: ~9 MB
+  1698+  - Pillow: ~10 MB
+  1699+  - Other deps: ~5 MB
+  1700+  - Application code: ~1 MB
+  1701+  - **Total uncompressed: ~35 MB**
+  1702+  - **With UPX compression: ~25-28 MB** ✅
+  1703+
+  1704+  **Intentionally NOT bundled:**
+  1705+  - Tesseract binary (~50 MB) — user installs separately for OCR
+  1706+  - NLTK data (~10 MB) — downloaded on first use if needed
+  1707+  - Embedding models — future optional download
+● Write C:\tmp\pdf-app-analysis\Unification Strategies\Codex's Suggested Plan - Deep Integration.md
+  added 451 lines at L1710 in C:\tmp\pdf-app-analysis\Unification Strategies\Codex's Suggested Plan - Deep
+  1710+
+  1711+  ---
+  1712+
+  1713+  ## External Reference Integration
+  1714+
+  1715+  **From the 10 ingested GitHub repositories:**
+  1716+
+  1717+  ### 1. burntsushi/ripgrep & ggreer/the_silver_searcher
+  1718+  **Pattern:** Fast prefilter → expensive rerank
+  1719+
+  1720+  **Applied to:**
+  1721+  - FTS5 candidate generation (cheap, fast, 200 results)
+  1722+  - BM25 reranking (expensive, accurate, top 20)
+  1723+
+  1724+  **Code location:** `src/search/searcher.py`
+  1725+
+  1726+  ---
+  1727+
+  1728+  ### 2. dorianbrown/rank_bm25
+  1729+  **Pattern:** Okapi BM25 with IDF smoothing
+  1730+
+  1731+  **Applied to:**
+  1732+  - BM25 scoring algorithm
+  1733+  - K1 and B parameter tuning
+  1734+  - IDF calculation with smoothing
+  1735+
+  1736+  **Code location:** `src/search/bm25.py`
+  1737+
+  1738+  ---
+  1739+
+  1740+  ### 3. dogsheep/dogsheep-beta
+  1741+  **Pattern:** SQLite FTS5 + custom search index
+  1742+
+  1743+  **Applied to:**
+  1744+  - FTS5 virtual table integration
+  1745+  - Multi-table join strategy
+  1746+  - Faceted search over result sets
+  1747+
+  1748+  **Code location:** `src/index/schema.py`, `src/search/facets.py`
+  1749+
+  1750+  ---
+  1751+
+  1752+  ### 4. simonw/s3-ocr
+  1753+  **Pattern:** OCR as opt-in separate step
+  1754+
+  1755+  **Applied to:**
+  1756+  - OCR in Tools tab, not automatic
+  1757+  - Clear Tesseract status indicator
+  1758+  - Re-index with OCR flag
+  1759+
+  1760+  **Code location:** `src/ui/tools_tab.py`, `src/core/pdf_parser.py`
+  1761+
+  1762+  ---
+  1763+
+  1764+  ### 5. firstflush/pdf-ninja
+  1765+  **Pattern:** Pluggable extractor with fallback chain
+  1766+
+  1767+  **Applied to:**
+  1768+  - pdfplumber → pypdf → OCR fallback
+  1769+  - Extraction method tracking
+  1770+  - Graceful degradation
+  1771+
+  1772+  **Code location:** `src/core/extraction.py`
+  1773+
+  1774+  ---
+  1775+
+  1776+  ### 6. coderdayton/simplevecdb
+  1777+  **Pattern:** Self-contained, minimal dependencies
+  1778+
+  1779+  **Applied to:**
+  1780+  - No numpy, no torch in core
+  1781+  - Pure Python BM25
+  1782+  - Offline-first design
+  1783+
+  1784+  **Philosophy:** Entire architecture
+  1785+
+  1786+  ---
+  1787+
+  1788+  ### 7. aksarav/pdfstract
+  1789+  **Pattern:** Per-page extraction with page-aware chunking
+  1790+
+  1791+  **Applied to:**
+  1792+  - Page numbers preserved through pipeline
+  1793+  - Page-level citations
+  1794+  - Page boundaries in chunking
+  1795+
+  1796+  **Code location:** `src/core/chunker.py`, `src/search/searcher.py`
+  1797+
+  1798+  ---
+  1799+
+  1800+  ### 8. Semantic Kernel (sk-hybrid-search)
+  1801+  **Pattern:** Two-phase hybrid retrieval
+  1802+
+  1803+  **Applied to:**
+  1804+  - Candidate generation + reranking
+  1805+  - Min-max score normalization
+  1806+  - Configurable candidate pool size
+  1807+
+  1808+  **Code location:** `src/search/searcher.py`
+  1809+
+  1810+  ---
+  1811+
+  1812+  ### 9. Python Semantic Splitter / TreeSitter Chunker
+  1813+  **Pattern:** Layered semantic chunking
+  1814+
+  1815+  **Applied to:**
+  1816+  - 4-layer chunking (page → paragraph → sentence → token)
+  1817+  - Overlap preservation
+  1818+  - Stable chunk IDs
+  1819+
+  1820+  **Code location:** `src/core/chunker.py`
+  1821+
+  1822+  ---
+  1823+
+  1824+  ### 10. Offline Search (Rust)
+  1825+  **Pattern:** Incremental reindex via mtime fingerprint
+  1826+
+  1827+  **Applied to:**
+  1828+  - (size, mtime) fingerprinting
+  1829+  - Skip unchanged files
+  1830+  - Incremental term_df updates
+  1831+
+  1832+  **Code location:** `src/index/indexer.py`
+  1833+
+  1834+  ---
+  1835+
+  1836+  ## Data Contracts: Stable APIs
+  1837+
+  1838+  **Critical for integration — these contracts MUST NOT change:**
+  1839+
+  1840+  ### Document Contract
+  1841+  ```python
+  1842+  @dataclass
+  1843+  class Document:
+  1844+      id: int
+  1845+      title: str
+  1846+      file_path: Path
+  1847+      file_type: str  # 'pdf' | 'epub'
+  1848+      page_count: int
+  1849+      file_size: int
+  1850+      file_mtime: float
+  1851+      indexed_at: float
+  1852+      extraction_method: str
+  1853+      metadata: Dict[str, Any]
+  1854+  ```
+  1855+
+  1856+  ### Chunk Contract
+  1857+  ```python
+  1858+  @dataclass
+  1859+  class Chunk:
+  1860+      chunk_id: str  # Stable SHA1
+  1861+      doc_id: int
+  1862+      page_num: int
+  1863+      chunk_idx: int
+  1864+      section_header: Optional[str]
+  1865+      content: str
+  1866+      token_count: int
+  1867+      start_char: int
+  1868+      end_char: int
+  1869+      prev_id: Optional[str]
+  1870+      next_id: Optional[str]
+  1871+  ```
+  1872+
+  1873+  ### Search Request Contract
+  1874+  ```python
+  1875+  @dataclass
+  1876+  class SearchRequest:
+  1877+      query: str
+  1878+      filters: Dict[str, Any]  # {file_type, year, author, ...}
+  1879+      limit: int
+  1880+      offset: int
+  1881+  ```
+  1882+
+  1883+  ### Search Response Contract
+  1884+  ```python
+  1885+  @dataclass
+  1886+  class SearchResponse:
+  1887+      query: str
+  1888+      elapsed_ms: float
+  1889+      results: List[SearchResult]
+  1890+      facets: Dict[str, List[FacetValue]]
+  1891+      debug: Optional[Dict[str, Any]]
+  1892+
+  1893+  @dataclass
+  1894+  class SearchResult:
+  1895+      chunk_id: str
+  1896+      doc_id: int
+  1897+      title: str
+  1898+      file_path: Path
+  1899+      file_type: str
+  1900+      page_num: int
+  1901+      section_header: Optional[str]
+  1902+      snippet: str
+  1903+      score: float
+  1904+      normalized_score: float
+  1905+      score_breakdown: Optional[Dict[str, float]]
+  1906+  ```
+  1907+
+  1908+  ### Configuration Contract
+  1909+  ```python
+  1910+  @dataclass
+  1911+  class Config:
+  1912+      # Chunking
+  1913+      max_chunk_tokens: int = 512
+  1914+      min_chunk_tokens: int = 20
+  1915+      chunk_overlap_tokens: int = 32
+  1916+
+  1917+      # BM25
+  1918+      bm25_k1: float = 1.5
+  1919+      bm25_b: float = 0.75
+  1920+      synonym_boost: float = 0.15
+  1921+
+  1922+      # Search
+  1923+      candidate_limit: int = 200
+  1924+      result_limit: int = 20
+  1925+
+  1926+      # Database
+  1927+      db_path: Path
+  1928+      cache_size_mb: int = 20
+  1929+
+  1930+      # Features
+  1931+      enable_ocr: bool = False
+  1932+      enable_synonyms: bool = True
+  1933+      language: str = "english"
+  1934+  ```
+  1935+
+  1936+  ---
+  1937+
+  1938+  ## Attribution Map: Who Contributed What
+  1939+
+  1940+  **Transparency is critical for a truly integrated approach.**
+  1941+
+  1942+  ### Core Extraction (src/core/extraction.py)
+  1943+  - **Base:** Lovable (extractor interface, PageText dataclass)
+  1944+  - **Error handling:** Claude Code 1 (try/except patterns, fallback chain)
+  1945+  - **Progress callbacks:** Kimi (callback signature, progress reporting)
+  1946+  - **Confidence scoring:** New (synthesized from all)
+  1947+
+  1948+  ### Text Processing (src/core/text_processor.py)
+  1949+  - **Base:** Lovable (normalization pipeline)
+  1950+  - **Tokenizer:** Vibestral 1 (regex patterns, Unicode handling)
+  1951+  - **Lazy loading:** Claude Code 1 (_lazy_nltk.py pattern)
+  1952+  - **Language hooks:** New (future multilingual support)
+  1953+
+  1954+  ### Semantic Chunking (src/core/chunker.py)
+  1955+  - **Base:** Lovable (4-layer architecture, stable IDs)
+  1956+  - **Bug fix:** Devin review (character position tracking)
+  1957+  - **Section headers:** Vibestral 2 (heading detection)
+  1958+  - **Memory optimization:** Qwen Coder (streaming approach)
+  1959+
+  1960+  ### Database Schema (src/index/schema.py)
+  1961+  - **Base:** Lovable (tables, FTS5, term_freq/term_df)
+  1962+  - **Indexes:** Qwen Coder (performance indexes)
+  1963+  - **Cascades:** Qwen Coder (ON DELETE CASCADE)
+  1964+  - **Metadata:** Claude Code 1 (meta table for migrations)
+  1965+
+  1966+  ### Indexing Engine (src/index/indexer.py)
+  1967+  - **Base:** Lovable (incremental indexing, fingerprinting)
+  1968+  - **Bug fix:** Devin review (transaction safety)
+  1969+  - **Batch inserts:** Qwen Coder (executemany optimization)
+  1970+  - **Error handling:** Claude Code 1 (per-file rollback)
+  1971+
+  1972+  ### Query Parser (src/search/query_parser.py)
+  1973+  - **Base:** Lovable (phrase extraction, stemming)
+  1974+  - **Intent detection:** Vibestral 1 (define:, compare:, example:)
+  1975+  - **Filter extraction:** Vibestral 1 (type:, year:, author:)
+  1976+  - **Shortcuts:** Vibestral 1 (query shortcuts)
+  1977+
+  1978+  ### BM25 Scorer (src/search/bm25.py)
+  1979+  - **Base:** Lovable (Okapi BM25, normalization)
+  1980+  - **Bug fix:** Kimi review (batch queries, not N+1)
+  1981+  - **Clean separation:** Codex (pure function, no DB in scorer)
+  1982+  - **Parameters:** Qwen Coder (tuning recommendations)
+  1983+
+  1984+  ### Search Engine (src/search/searcher.py)
+  1985+  - **Base:** Lovable (two-phase architecture)
+  1986+  - **Bug fix #1:** Devin review (filters in fuzzy fallback)
+  1987+  - **Bug fix #2:** Devin review (year filter validation)
+  1988+  - **Intent handling:** Vibestral 1 (intent-aware search)
+  1989+  - **Snippet optimization:** Claude Code 1 (context window)
+  1990+
+  1991+  ### User Interface (src/ui/app_ui.py)
+  1992+  - **Base:** Lovable (three-tab architecture, worker threads)
+  1993+  - **Progress indicators:** Kimi (rich progress feedback)
+  1994+  - **Keyboard shortcuts:** Vibestral 1 (comprehensive bindings)
+  1995+  - **Bug fix:** Devin review (MouseWheel binding)
+  1996+  - **Theme system:** Claude Code 1 (light/dark themes)
+  1997+
+  1998+  ### CLI Interface (src/cli/main.py)
+  1999+  - **Base:** Lovable (argparse structure, commands)
+  2000+  - **JSON output:** New (automation support)
+  2001+  - **Filter options:** Vibestral 1 (comprehensive filters)
+  2002+  - **Parity tests:** New (ensure GUI/CLI equivalence)
+  2003+
+  2004+  ### Testing (tests/)
+  2005+  - **Base:** Lovable (smoke tests, test structure)
+  2006+  - **Regression tests:** Devin review (all identified bugs)
+  2007+  - **Golden queries:** Claude Code 1 (relevance testing)
+  2008+  - **Property tests:** New (invariant checking)
+  2009+
+  2010+  ---
+  2011+
+  2012+  ## Final Integrated Vision
+  2013+
+  2014+  ### What You Get
+  2015+
+  2016+  **A single, cohesive application that:**
+  2017+
+  2018+  1. **Extracts text** from PDFs and EPUBs with robust fallbacks
+  2019+  2. **Chunks semantically** preserving document structure and context
+  2020+  3. **Indexes efficiently** with incremental updates and transaction safety
+  2021+  4. **Searches accurately** using two-phase retrieval (FTS5 + BM25)
+  2022+  5. **Presents beautifully** in a responsive GUI with excellent UX
+  2023+  6. **Automates easily** via CLI with JSON output
+  2024+  7. **Tests comprehensively** with 80%+ coverage and regression tests
+  2025+  8. **Packages compactly** under 30MB with no bloat
+  2026+  9. **Runs offline** with no network dependencies
+  2027+  10. **Extends gracefully** with hooks for future enhancements
+  2028+
+  2029+  ### What Makes This "Truly Integrated"
+  2030+
+  2031+  **Not just picking the best implementation, but:**
+  2032+
+  2033+  1. **Synthesizing algorithms** — combining BM25 from multiple sources into one optimal version
+  2034+  2. **Fixing all bugs** — addressing every issue from code reviews
+  2035+  3. **Merging UX patterns** — taking the best UI elements from each implementation
+  2036+  4. **Unifying behavior** — ensuring GUI and CLI are identical
+  2037+  5. **Maximizing test coverage** — combining all test suites
+  2038+  6. **Documenting decisions** — attributing every choice to its source
+  2039+  7. **Maintaining contracts** — stable APIs that won't break
+  2040+  8. **Optimizing performance** — applying all validated optimizations
+  2041+  9. **Preserving features** — keeping every useful capability
+  2042+  10. **Creating coherence** — one codebase, one architecture, one vision
+  2043+
+  2044+  ### Why This Approach Is Hard (But Right)
+  2045+
+  2046+  **The easy way:** Pick Lovable, ship it, ignore the rest.
+  2047+
+  2048+  **The integrated way:**
+  2049+  - Read and understand 11 implementations
+  2050+  - Analyze 6 code reviews
+  2051+  - Study 10 external references
+  2052+  - Identify and fix 20+ bugs
+  2053+  - Merge 50+ features
+  2054+  - Write 200+ tests
+  2055+  - Document 100+ decisions
+  2056+  - Ensure behavioral parity across UI/CLI
+  2057+  - Maintain offline-first principles
+  2058+  - Stay under 30MB package size
+  2059+
+  2060+  **But the result is:**
+  2061+  - Production-grade quality
+  2062+  - Battle-tested from multiple angles
+  2063+  - Optimized from real-world usage (Vibestral 2 database)
+  2064+  - Secure from security reviews (Devin, Sourcery)
+  2065+  - Fast from performance profiling (Qwen)
+  2066+  - Usable from UX refinement (Kimi, Vibestral 1)
+  2067+  - Maintainable from clean architecture (Lovable, Claude)
+  2068+  - Extensible from modular design (all implementations)
+  2069+
+  2070+  ---
+  2071+
+  2072+  ## Success Metrics
+  2073+
+  2074+  **The unified application succeeds when:**
+  2075+
+  2076+  ### Functional Metrics
+  2077+  - ✅ All 20+ identified bugs are fixed
+  2078+  - ✅ All regression tests pass
+  2079+  - ✅ Golden query relevance > 90%
+  2080+  - ✅ GUI and CLI return identical results
+  2081+  - ✅ Filters work in all code paths
+  2082+
+  2083+  ### Performance Metrics
+  2084+  - ✅ Search latency < 100ms (10k chunks)
+  2085+  - ✅ Indexing speed < 1 min per 1000 pages
+  2086+  - ✅ Memory usage < 200MB peak
+  2087+  - ✅ Startup time < 2 seconds
+  2088+  - ✅ Package size < 30MB compressed
+  2089+
+  2090+  ### Quality Metrics
+  2091+  - ✅ Test coverage > 80%
+  2092+  - ✅ Zero SQL injection vulnerabilities
+  2093+  - ✅ Zero silent failures
+  2094+  - ✅ All errors logged properly
+  2095+  - ✅ Documentation complete
+  2096+
+  2097+  ### Integration Metrics
+  2098+  - ✅ Features from all 11 implementations represented
+  2099+  - ✅ All code reviews addressed
+  2100+  - ✅ All external patterns applied
+  2101+  - ✅ Attribution map complete
+  2102+  - ✅ Integration decisions documented
+  2103+
+  2104+  ---
+  2105+
+  2106+  ## Conclusion: A Truly Holistic Approach
+  2107+
+  2108+  This plan represents **genuine integration**, not superficial consolidation.
+  2109+
+  2110+  **Every implementation contributes:**
+  2111+  - Lovable: Architecture foundation
+  2112+  - Claude: Error handling and robustness
+  2113+  - Kimi: UX excellence
+  2114+  - Vibestral 1: Query intelligence
+  2115+  - Vibestral 2: Production validation
+  2116+  - Qwen: Performance optimization
+  2117+  - Codex: Clean separation
+  2118+  - Code Reviews: Bug identification
+  2119+  - External References: Proven patterns
+  2120+
+  2121+  **Every bug is fixed:**
+  2122+  - 7 from Lovable
+  2123+  - 4 from Claude
+  2124+  - 3 from Kimi
+  2125+  - 5 from Vibestral
+  2126+  - 6 from Qwen
+  2127+  - 3 from Codex
+  2128+  - 3 repository-wide
+  2129+
+  2130+  **Every feature is preserved:**
+  2131+  - PDF/EPUB extraction
+  2132+  - OCR support
+  2133+  - Semantic chunking
+  2134+  - Two-phase retrieval
+  2135+  - Faceted search
+  2136+  - Intent detection
+  2137+  - Synonym expansion
+  2138+  - Progress indicators
+  2139+  - Theme switching
+  2140+  - CLI automation
+  2141+  - JSON output
+  2142+
+  2143+  **The result:** A production-grade, offline-first PDF/EPUB intelligence application that truly leverages the
+      entire repository's value, not just one folder.
+  2144+
+  2145+  **This is the comprehensive, holistic, integrated approach you asked for.**
+  2146+
+  2147+  ---
+  2148+
+  2149+  ## Next Steps
+  2150+
+  2151+  1. **Review this plan** — ensure it meets your vision
+  2152+  2. **Prioritize phases** — adjust timeline if needed
+  2153+  3. **Set up repository** — create unified/ structure
+  2154+  4. **Begin Phase 0** — foundation and planning
+  2155+  5. **Execute systematically** — one phase at a time
+  2156+  6. **Test continuously** — regression tests from day one
+  2157+  7. **Document decisions** — maintain attribution map
+  2158+  8. **Ship confidently** — knowing every piece is battle-tested
+  2159+
+  2160+  **Ready to build the definitive PDF intelligence application.**
