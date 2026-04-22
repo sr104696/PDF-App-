@@ -1,0 +1,1463 @@
+Summary
+nltk@3.9.1 has 6 CVEs in 3 package files
+
+The highest severity CVE is Zip Slip Vulnerability in nltk Leading to Code Execution
+
+See the Issues section for more details on each CVE
+
+Fix
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade nltk@3.9.1 to 3.9.4
+
+To resolve all issues in Lovable/requirements.txt, upgrade nltk@3.9.1 to 3.9.4
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade nltk@3.9.1 to 3.9.4
+
+Issues
+Issue details
+nltk @3.9.1 - Zip Slip Vulnerability in nltk Leading to Code Execution
+Critical severity (100)
+A critical vulnerability exists in the NLTK downloader component of nltk/nltk, affecting all versions. The _unzip_iter function in nltk/downloader.py uses zipfile.extractall() without performing path validation or security checks. This allows attackers to craft malicious zip packages that, when downloaded and extracted by NLTK, can execute arbitrary code. The vulnerability arises because NLTK assumes all downloaded packages are trusted and extracts them without validation. If a malicious package contains Python files, such as init.py, these files are executed automatically upon import, leading to remote code execution. This issue can result in full system compromise, including file system access, network access, and potential persistence mechanisms.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade nltk@3.9.1 to 3.9.3
+
+To resolve all issues in Lovable/requirements.txt, upgrade nltk@3.9.1 to 3.9.3
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade nltk@3.9.1 to 3.9.3
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 14
+nltk==3.9.1                 # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 13
+nltk==3.9.1                # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 12
+nltk==3.9.1                 # punkt sentence tokenizer; regex fallback if data absent
+nltk @3.9.1 - NLTK: Arbitrary file read via improper path validation in `filestring()` function
+High severity (86)
+A vulnerability in the filestring() function of the nltk.util module in nltk version 3.9.2 allows arbitrary file read due to improper validation of input paths. The function directly opens files specified by user input without sanitization, enabling attackers to access sensitive system files by providing absolute paths or traversal paths. This vulnerability can be exploited locally or remotely, particularly in scenarios where the function is used in web APIs or other interfaces that accept user-supplied input.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade nltk@3.9.1 to 3.9.3
+
+To resolve all issues in Lovable/requirements.txt, upgrade nltk@3.9.1 to 3.9.3
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade nltk@3.9.1 to 3.9.3
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 14
+nltk==3.9.1                 # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 13
+nltk==3.9.1                # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 12
+nltk==3.9.1                 # punkt sentence tokenizer; regex fallback if data absent
+nltk @3.9.1 - NLTK: Arbitrary file overwrite and creation via path traversal in XML index files
+High severity (81)
+NLTK (Natural Language Toolkit) is a suite of open source Python modules, data sets, and tutorials supporting research and development in Natural Language Processing. In versions 3.9.3 and prior, the NLTK downloader does not validate the subdir and id attributes when processing remote XML index files. Attackers can control a remote XML index server to provide malicious values containing path traversal sequences (such as ../), which can lead to arbitrary directory creation, arbitrary file creation, and arbitrary file overwrite. Commit 89fe2ec2c6bae6e2e7a46dad65cc34231976ed8a patches the issue.
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 14
+nltk==3.9.1                 # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 13
+nltk==3.9.1                # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 12
+nltk==3.9.1                 # punkt sentence tokenizer; regex fallback if data absent
+nltk @3.9.1 - NLTK: Denial of Service via unauthenticated remote shutdown
+High severity (75)
+NLTK (Natural Language Toolkit) is a suite of open source Python modules, data sets, and tutorials supporting research and development in Natural Language Processing. In versions 3.9.3 and prior, nltk.app.wordnet_app allows unauthenticated remote shutdown of the local WordNet Browser HTTP server when it is started in its default mode. A simple GET /SHUTDOWN%20THE%20SERVER request causes the process to terminate immediately via os._exit(0), resulting in a denial of service. Commit bbaae83db86a0f49e00f5b0db44a7254c268de9b patches the issue.
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 14
+nltk==3.9.1                 # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 13
+nltk==3.9.1                # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 12
+nltk==3.9.1                 # punkt sentence tokenizer; regex fallback if data absent
+nltk @3.9.1 - NLTK: Script execution via reflected cross-site scripting in WordNet Browser
+Medium severity (61)
+NLTK (Natural Language Toolkit) is a suite of open source Python modules, data sets, and tutorials supporting research and development in Natural Language Processing. In versions 3.9.3 and prior, nltk.app.wordnet_app contains a reflected cross-site scripting issue in the lookup_... route. A crafted lookup_<payload> URL can inject arbitrary HTML/JavaScript into the response page because attacker-controlled word data is reflected into HTML without escaping. This impacts users running the local WordNet Browser server and can lead to script execution in the browser origin of that application. Commit 1c3f799607eeb088cab2491dcf806ae83c29ad8f fixes the issue.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade nltk@3.9.1 to 3.9.4
+
+To resolve all issues in Lovable/requirements.txt, upgrade nltk@3.9.1 to 3.9.4
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade nltk@3.9.1 to 3.9.4
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 14
+nltk==3.9.1                 # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 13
+nltk==3.9.1                # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 12
+nltk==3.9.1                 # punkt sentence tokenizer; regex fallback if data absent
+nltk @3.9.1 - Natural Language Toolkit (NLTK) has unbounded recursion in JSONTaggedDecoder.decode_obj() may cause DoS
+Medium severity (50)
+Summary
+JSONTaggedDecoder.decode_obj() in nltk/jsontags.py calls itself
+recursively without any depth limit. A deeply nested JSON structure
+exceeding sys.getrecursionlimit() (default: 1000) will raise an
+unhandled RecursionError, crashing the Python process.
+
+Affected code
+File: nltk/jsontags.py, lines 47–52
+
+@classmethod
+def decode_obj(cls, obj):
+    if isinstance(obj, dict):
+        obj = {key: cls.decode_obj(val) for (key, val) in obj.items()}
+    elif isinstance(obj, list):
+        obj = list(cls.decode_obj(val) for val in obj)
+Proof of Concept
+import sys, json
+from nltk.jsontags import JSONTaggedDecoder
+
+depth = sys.getrecursionlimit() + 50  # e.g. 1050
+payload = '{"x":' * depth + "null" + "}" * depth
+
+# Raises RecursionError, crashing the process
+json.loads(payload, cls=JSONTaggedDecoder)
+Impact
+Any code path that passes externally-supplied JSON to
+JSONTaggedDecoder is vulnerable to denial of service.
+The severity depends on whether such a path exists in the
+calling code (e.g. nltk/data.py).
+
+Suggested Fix
+Add a depth parameter with a hard limit:
+
+@classmethod
+def decode_obj(cls, obj, _depth=0):
+    if _depth > 100:
+        raise ValueError("JSON nesting too deep")
+    if isinstance(obj, dict):
+        obj = {key: cls.decode_obj(val, _depth + 1) 
+               for (key, val) in obj.items()}
+    elif isinstance(obj, list):
+        obj = list(cls.decode_obj(val, _depth + 1) for val in obj)
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 14
+nltk==3.9.1                 # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 13
+nltk==3.9.1                # punkt sentence tokenizer (data downloaded on first run)
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 12
+nltk==3.9.1                 # punkt sentence tokenizer; regex fallback if data absent
+pdfminer.six
+High severity (86)
+Dependency - pip
+2 CVEs
+- 1 package file
+Active
+Last seen 14 minutes ago
+Summary
+pdfminer.six@20231228 has 2 CVEs in 1 package file
+
+The highest severity CVE is Pdfminer.six is a community maintained fork of the original PDFMiner, ...
+
+See the Issues section for more details on each CVE
+
+Fix
+To resolve all issues in Qwen Coder/pdf_intelligence/requirements.txt, upgrade pdfminer.six@20231228 to 20251230
+
+Issues
+Issue details
+pdfminer.six @20231228 - Pdfminer.six is a community maintained fork of the original PDFMiner, ...
+High severity (86)
+Pdfminer.six is a community maintained fork of the original PDFMiner, a tool for extracting information from PDF documents. Prior to version 20251107, pdfminer.six will execute arbitrary code from a malicious pickle file if provided with a malicious PDF file. The CMapDB._load_data() function in pdfminer.six uses pickle.loads() to deserialize pickle files. These pickle files are supposed to be part of the pdfminer.six distribution stored in the cmap/ directory, but a malicious PDF can specify an alternative directory and filename as long as the filename ends in .pickle.gz. A malicious, zipped pickle file can then contain code which will automatically execute when the PDF is processed. Version 20251107 fixes the issue.
+
+To resolve all issues in Qwen Coder/pdf_intelligence/requirements.txt, upgrade pdfminer.six@20231228 to 20251107
+
+Location
+sr104696/PDF-App-
+Qwen Coder/pdf_intelligence/requirements.txt
+Line 2
+pdfminer.six==20231228
+pdfminer.six @20231228 - pdfminer.six before 20251230 contains an insecure deserialization vuln ...
+High severity (78)
+pdfminer.six before 20251230 contains an insecure deserialization vulnerability in the CMap loading mechanism. The library uses Python pickle to deserialize CMap cache files without validation. An attacker with the ability to place a malicious pickle file in a location accessible to the application can trigger arbitrary code execution or privilege escalation when the file is loaded by a trusted process. This is caused by an incomplete patch to CVE-2025-64512.
+
+To resolve all issues in Qwen Coder/pdf_intelligence/requirements.txt, upgrade pdfminer.six@20231228 to 20251230
+
+Location
+sr104696/PDF-App-
+Qwen Coder/pdf_intelligence/requirements.txt
+Line 2
+pdfminer.six==20231228
+close
+
+
+SQL injection from untrusted request data interpolated into raw SQL strings
+High severity (85)
+SAST - Python
+2 issues
+Active
+Last seen 14 minutes ago
+Issues
+Issue details
+SQL injection from string concatenation in raw SQL queries in SQLAlchemy
+High severity (85)
+Risk: SQL injection could expose or modify data, run unauthorized queries, and bypass authorization, compromising database integrity and confidentiality.
+
+Cause: Untrusted values are interpolated into SQL strings and executed via Connection.execute, allowing crafted input to alter the SQL structure.
+
+Fix
+Use parameterized queries with sqlalchemy.text() and named parameters. Example: stmt = text('SELECT * FROM users WHERE id=:id'); conn.execute(stmt, {'id': user_id}). For complex queries, use SQL Expression Language or the ORM. Never use +, %, format, or f-strings to build SQL.
+
+Locations
+34
+sr104696/PDF-App-
+Claude/Claude Code 1/src/search/bm25.py
+Lines 92-95
+        # ── Per-chunk length ─────────────────────────────────────────────
+        ph = ",".join("?" * len(candidate_chunk_ids))
+        chunk_lens: dict[str, int] = {}
+        for row in conn.execute(
+            f"SELECT id, tokenCount FROM pages_chunks WHERE id IN ({ph})",
+            list(candidate_chunk_ids),
+        ):
+            chunk_lens[row["id"]] = row["tokenCount"] or 1
+
+        # ── Score accumulator ────────────────────────────────────────────
+sr104696/PDF-App-
+Claude/Claude Code 1/src/search/bm25.py
+Lines 112-115
+        # Batch-fetch df for all query terms
+        term_ph = ",".join("?" * len(all_terms))
+        df_map: dict[str, int] = {}
+        for row in conn.execute(
+            f"SELECT term, df FROM term_df WHERE term IN ({term_ph})",
+            all_terms,
+        ):
+            df_map[row["term"]] = row["df"]
+
+        # For each term, batch-fetch TF across all candidate chunks
+sr104696/PDF-App-
+Claude/Claude Code 1/src/search/bm25.py
+Lines 125-132
+                continue  # term not in corpus at all
+            term_idf = _idf(n_docs, df)
+
+            for row in conn.execute(
+                f"""
+                SELECT chunkId, tf
+                FROM term_freq
+                WHERE term = ? AND chunkId IN ({ph})
+                """,
+                [term] + list(candidate_chunk_ids),
+            ):
+                cid = row["chunkId"]
+                tf = row["tf"] or 0
+                if tf == 0:
+sr104696/PDF-App-
+Claude/Claude Code 1/src/search/facets.py
+Lines 45-56
+    conn = get_db_connection(db_path)
+    try:
+        def _agg(col: str) -> list[dict]:
+            rows = conn.execute(
+                f"""
+                SELECT {col} AS name, COUNT(*) AS count
+                FROM documents
+                WHERE id IN ({ph})
+                  AND {col} IS NOT NULL
+                  AND {col} != ''
+                GROUP BY {col}
+                ORDER BY count DESC
+                """,
+                doc_ids,
+            ).fetchall()
+            return [{"name": r["name"], "count": r["count"]} for r in rows]
+
+        authors = _agg("author")
+sr104696/PDF-App-
+Claude/Claude Code 1/src/search/facets.py
+Lines 64-73
+        file_types = _agg("fileType")
+        collections = _agg("collection")
+
+        tags_rows = conn.execute(
+            f"""
+            SELECT tag AS name, COUNT(*) AS count
+            FROM doc_tags
+            WHERE docId IN ({ph})
+            GROUP BY tag
+            ORDER BY count DESC
+            """,
+            doc_ids,
+        ).fetchall()
+        tags = [{"name": r["name"], "count": r["count"]} for r in tags_rows]
+
+        return {
+sr104696/PDF-App-
+Claude/Claude Code 1/src/search/searcher.py
+Lines 139-150
+            f"LOWER(pc.content) LIKE ?" for _ in tokens
+        )
+        params = [f"%{t}%" for t in tokens]
+        rows2 = conn.execute(
+            f"""
+            SELECT pc.id AS chunk_id, pc.docId, pc.pageNum,
+                   pc.content, pc.sectionHeader,
+                   d.title, d.filePath, d.author, d.year, d.fileType
+            FROM pages_chunks pc
+            JOIN documents d ON pc.docId = d.id
+            WHERE {like_clause}
+            LIMIT {limit}
+            """,
+            params,
+        ).fetchall()
+        return [{**dict(r), "bm25_score": 0.5} for r in rows2]
+    finally:
+        conn.close()
+sr104696/PDF-App-
+Claude/Claude Code 2/FinalApp/src/search/facets.py
+Lines 18-23
+    result: Dict[str, List[Tuple[str, int]]] = {}
+
+    for col in ("author", "year", "file_type", "collection"):
+        rows = conn.execute(
+            f"""SELECT {col}, COUNT(*) as n FROM documents
+                WHERE id IN ({ph}) AND {col} IS NOT NULL
+                GROUP BY {col} ORDER BY n DESC""",
+            doc_ids,
+        ).fetchall()
+        result[col] = [(str(r[0]), int(r[1])) for r in rows]
+
+    # Tags
+sr104696/PDF-App-
+Claude/Claude Code 2/FinalApp/src/search/facets.py
+Lines 27-31
+        result[col] = [(str(r[0]), int(r[1])) for r in rows]
+
+    # Tags
+    tag_rows = conn.execute(
+        f"""SELECT tag, COUNT(*) as n FROM doc_tags
+            WHERE doc_id IN ({ph}) GROUP BY tag ORDER BY n DESC""",
+        doc_ids,
+    ).fetchall()
+    result["tag"] = [(str(r[0]), int(r[1])) for r in tag_rows]
+
+    return result
+sr104696/PDF-App-
+Claude/Claude Code 2/FinalApp/src/search/searcher.py
+Line 96
+    """
+    params.append(limit)
+    try:
+        return conn.execute(sql, params).fetchall()
+    except sqlite3.OperationalError as e:
+        log.warning("FTS query error (%s) — query was: %s", e, fts_query)
+        return []
+sr104696/PDF-App-
+Claude/Claude Code 2/FinalApp/src/search/searcher.py
+Lines 108-110
+    if not terms:
+        return {}
+    ph = ",".join("?" * len(terms))
+    rows = conn.execute(
+        f"SELECT term, df FROM term_df WHERE term IN ({ph})", tuple(terms)
+    ).fetchall()
+    return {r[0]: int(r[1]) for r in rows}
+sr104696/PDF-App-
+Claude/Claude Code 2/FinalApp/src/search/searcher.py
+Lines 123-127
+        return {}
+    cph = ",".join("?" * len(chunk_ids))
+    tph = ",".join("?" * len(terms))
+    rows = conn.execute(
+        f"""SELECT chunk_id, term, tf FROM term_freq
+            WHERE chunk_id IN ({cph}) AND term IN ({tph})""",
+        (*chunk_ids, *terms),
+    ).fetchall()
+    out: Dict[str, Dict[str, int]] = {}
+    for cid, term, tf in rows:
+        out.setdefault(cid, {})[term] = int(tf)
+sr104696/PDF-App-
+Claude/Claude Code 2/FinalApp/src/search/searcher.py
+Lines 140-143
+    if not chunk_ids:
+        return {}
+    ph = ",".join("?" * len(chunk_ids))
+    rows = conn.execute(
+        f"SELECT chunk_id, structure_type FROM chunk_structure WHERE chunk_id IN ({ph})",
+        tuple(chunk_ids),
+    ).fetchall()
+    return {r[0]: r[1] for r in rows}
+sr104696/PDF-App-
+Claude/Claude Code 2/FinalApp/src/search/searcher.py
+Lines 154-159
+    if not stems:
+        return []
+    ph = ",".join("?" * len(stems))
+    rows = conn.execute(
+        f"""SELECT term_b as partner, SUM(count) as total
+            FROM term_cooccurrence WHERE term_a IN ({ph})
+            GROUP BY term_b ORDER BY total DESC LIMIT ?""",
+        (*tuple(stems), topk),
+    ).fetchall()
+    partners = [r[0] for r in rows]
+    # Also check reverse direction
+    rows2 = conn.execute(
+sr104696/PDF-App-
+Claude/Claude Code 2/FinalApp/src/search/searcher.py
+Lines 162-167
+    ).fetchall()
+    partners = [r[0] for r in rows]
+    # Also check reverse direction
+    rows2 = conn.execute(
+        f"""SELECT term_a as partner, SUM(count) as total
+            FROM term_cooccurrence WHERE term_b IN ({ph})
+            GROUP BY term_a ORDER BY total DESC LIMIT ?""",
+        (*tuple(stems), topk),
+    ).fetchall()
+    for r in rows2:
+        if r[0] not in partners:
+            partners.append(r[0])
+sr104696/PDF-App-
+Claude/Claude Code 2/FinalApp/src/search/searcher.py
+Lines 183-186
+    if not EMBEDDING_ENABLED or query_vec is None or not chunk_ids:
+        return {}
+    ph = ",".join("?" * len(chunk_ids))
+    rows = conn.execute(
+        f"SELECT chunk_id, embedding FROM chunk_embeddings WHERE chunk_id IN ({ph})",
+        tuple(chunk_ids),
+    ).fetchall()
+    scores: Dict[str, float] = {}
+    q_norm = math.sqrt(sum(x * x for x in query_vec)) or 1.0
+    for cid, blob in rows:
+sr104696/PDF-App-
+Codex/Codex Work/search/bm25.py
+Lines 37-40
+
+    placeholders = ','.join(['?'] * len(candidate_doc_ids))
+    # Read document lengths once and reuse for all terms.
+    cursor.execute(
+        f"SELECT id, totalTokens FROM documents WHERE id IN ({placeholders})",
+        candidate_doc_ids
+    )
+    doc_lengths = {
+        row["id"]: (row["totalTokens"] if row["totalTokens"] else 0)
+        for row in cursor.fetchall()
+sr104696/PDF-App-
+Codex/Codex Work/search/bm25.py
+Lines 62-66
+            continue # Term not in corpus
+
+        # Fetch only non-zero frequencies for this term in candidate docs.
+        cursor.execute(f"""
+            SELECT docId, freq
+            FROM term_freq
+            WHERE term = ? AND docId IN ({placeholders})
+        """, [term] + candidate_doc_ids)
+
+        for row in cursor.fetchall():
+            doc_id = row['docId']
+sr104696/PDF-App-
+Kimi/indexer.py
+Line 250
+
+        for field in ("author", "year", "fileType"):
+            sql = f"SELECT {field}, COUNT(*) FROM documents {id_filter} GROUP BY {field}"
+            for val, cnt in self.conn.execute(sql, params):
+                if val is not None:
+                    facets[field][str(val)] = cnt
+sr104696/PDF-App-
+Kimi/indexer.py
+Line 259
+            WHERE docId IN (SELECT id FROM documents {id_filter})
+            GROUP BY tag
+        """
+        for val, cnt in self.conn.execute(tag_sql, params):
+            facets["tags"][val] = cnt
+
+        return facets
+sr104696/PDF-App-
+Kimi/searcher.py
+Line 185
+
+        if conditions:
+            where = " AND ".join(conditions)
+            cur = self.conn.execute(f"SELECT id FROM documents WHERE {where}", params)
+            doc_ids = {r[0] for r in cur}
+
+        if filters.get("tag"):
+sr104696/PDF-App-
+Lovable/src/search/facets.py
+Lines 26-31
+    for f in fields:
+        if f not in {"file_type", "author", "year", "collection"}:
+            continue
+        rows = conn.execute(
+            f"""SELECT {f}, COUNT(*) c FROM documents
+                WHERE id IN ({placeholders}) AND {f} IS NOT NULL AND {f} <> ''
+                GROUP BY {f} ORDER BY c DESC LIMIT 25""",
+            tuple(doc_ids),
+        ).fetchall()
+        out[f] = [(str(v), int(c)) for v, c in rows]
+    return out
+sr104696/PDF-App-
+Lovable/src/search/searcher.py
+Line 80
+        LIMIT ?
+    """
+    params.append(limit)
+    return conn.execute(sql, params).fetchall()
+
+
+def _df_lookup(conn: sqlite3.Connection, terms: Sequence[str]) -> Dict[str, int]:
+sr104696/PDF-App-
+Lovable/src/search/searcher.py
+Lines 87-90
+    if not terms:
+        return {}
+    placeholders = ",".join("?" * len(terms))
+    rows = conn.execute(
+        f"SELECT term, df FROM term_df WHERE term IN ({placeholders})",
+        tuple(terms),
+    ).fetchall()
+    return {t: int(df) for t, df in rows}
+sr104696/PDF-App-
+Lovable/src/search/searcher.py
+Lines 100-104
+        return {}
+    cph = ",".join("?" * len(chunk_ids))
+    tph = ",".join("?" * len(terms))
+    rows = conn.execute(
+        f"""SELECT chunk_id, term, tf FROM term_freq
+            WHERE chunk_id IN ({cph}) AND term IN ({tph})""",
+        (*chunk_ids, *terms),
+    ).fetchall()
+    out: Dict[str, Dict[str, int]] = {}
+    for cid, term, tf in rows:
+        out.setdefault(cid, {})[term] = int(tf)
+sr104696/PDF-App-
+Qwen Coder/pdf_intelligence/src/search/bm25.py
+Lines 67-72
+                continue  # Term not in corpus
+            
+            # Get term frequencies for all candidate docs in a single query
+            cursor.execute(f"""
+                SELECT d.id as docId, d.totalTokens, tf.freq
+                FROM documents d
+                LEFT JOIN term_freq tf ON d.id = tf.docId AND tf.term = ?
+                WHERE d.id IN ({placeholders})
+            """, [term] + candidate_doc_ids)
+            
+            for row in cursor.fetchall():
+                doc_id = row['docId']
+sr104696/PDF-App-
+Vibestral/Vibestral 1/bm25.py
+Lines 67-72
+                continue  # Term not in corpus
+            
+            # Get term frequencies for all candidate docs in a single query
+            cursor.execute(f"""
+                SELECT d.id as docId, d.totalTokens, tf.freq
+                FROM documents d
+                LEFT JOIN term_freq tf ON d.id = tf.docId AND tf.term = ?
+                WHERE d.id IN ({placeholders})
+            """, [term] + candidate_doc_ids)
+            
+            for row in cursor.fetchall():
+                doc_id = row['docId']
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/src/index/schema.py
+Line 135
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA temp_store=MEMORY")
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute(f"PRAGMA cache_size=-{SQLITE_PAGE_CACHE_KB}")
+    conn.execute(f"PRAGMA mmap_size={SQLITE_MMAP_SIZE}")
+    _init_schema(conn)
+    return conn
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/src/index/schema.py
+Line 136
+    conn.execute("PRAGMA temp_store=MEMORY")
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute(f"PRAGMA cache_size=-{SQLITE_PAGE_CACHE_KB}")
+    conn.execute(f"PRAGMA mmap_size={SQLITE_MMAP_SIZE}")
+    _init_schema(conn)
+    return conn
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/src/search/facets.py
+Lines 28-33
+    for f in fields:
+        if f not in {"file_type", "author", "year", "collection"}:
+            continue
+        rows = conn.execute(
+            f"""SELECT {f}, COUNT(*) c FROM documents
+                WHERE id IN ({placeholders}) AND {f} IS NOT NULL AND {f} <> ''
+                GROUP BY {f} ORDER BY c DESC LIMIT 25""",
+            tuple(doc_ids),
+        ).fetchall()
+        out[f] = [(str(v), int(c)) for v, c in rows]
+    return out
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/src/search/searcher.py
+Line 114
+        LIMIT ?
+    """
+    params.append(limit)
+    return conn.execute(sql, params).fetchall()
+
+
+def _df_lookup(conn: sqlite3.Connection, terms: Sequence[str]) -> Dict[str, int]:
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/src/search/searcher.py
+Lines 121-124
+    if not terms:
+        return {}
+    placeholders = ",".join("?" * len(terms))
+    rows = conn.execute(
+        f"SELECT term, df FROM term_df WHERE term IN ({placeholders})",
+        tuple(terms),
+    ).fetchall()
+    return {t: int(df) for t, df in rows}
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/src/search/searcher.py
+Lines 137-141
+        return {}
+    cph = ",".join("?" * len(chunk_ids))
+    tph = ",".join("?" * len(terms))
+    rows = conn.execute(
+        f"""SELECT chunk_id, term, tf FROM term_freq
+            WHERE chunk_id IN ({cph}) AND term IN ({tph})""",
+        (*chunk_ids, *terms),
+    ).fetchall()
+    out: Dict[str, Dict[str, int]] = {}
+    for cid, term, tf in rows:
+        out.setdefault(cid, {})[term] = int(tf)
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/src/search/searcher.py
+Lines 280-287
+            where.append(f"d.id IN ({placeholders})")
+            params.extend(doc_ids)
+        where_clause = f"WHERE {' AND '.join(where)}" if where else ""
+        rows = conn.execute(
+            f"""SELECT c.id, c.doc_id, c.page_num, c.section_header, c.content,
+                      c.token_count, d.title, d.file_path, d.file_type, d.author, d.year
+               FROM pages_chunks c JOIN documents d ON d.id = c.doc_id
+               {where_clause}
+               LIMIT 5000""",
+            params,
+        ).fetchall()
+        needle = " ".join(tokens)
+        scored = sorted(rows, key=lambda r: fuzz.partial_ratio(needle, r[4][:400]),
+                        reverse=True)
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/src/search/searcher.py
+Lines 301-307
+            where.append(f"d.id IN ({placeholders})")
+            params.extend(doc_ids)
+        params.append(limit)
+        return conn.execute(
+            f"""SELECT c.id, c.doc_id, c.page_num, c.section_header, c.content,
+                      c.token_count, d.title, d.file_path, d.file_type, d.author, d.year
+               FROM pages_chunks c JOIN documents d ON d.id = c.doc_id
+               WHERE {' AND '.join(where)} LIMIT ?""",
+            params,
+        ).fetchall()
+
+
+def _record_history(conn: sqlite3.Connection, q: str) -> None:
+SQL injection from formatted SQL string in database execute call
+High severity (85)
+Risk: SQL injection can let attackers modify queries, exfiltrate data, or drop tables.
+
+Cause: The query string is built via string formatting or f-strings before execute(), letting untrusted input alter SQL structure.
+
+Fix
+Use parameterized queries with placeholders from your DB driver (e.g., psycopg2, sqlite3, MySQLdb). Pass values as parameters to execute() instead of formatting them into the SQL string.
+
+Locations
+2
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/src/index/schema.py
+Line 135
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA temp_store=MEMORY")
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute(f"PRAGMA cache_size=-{SQLITE_PAGE_CACHE_KB}")
+    conn.execute(f"PRAGMA mmap_size={SQLITE_MMAP_SIZE}")
+    _init_schema(conn)
+    return conn
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/src/index/schema.py
+Line 136
+    conn.execute("PRAGMA temp_store=MEMORY")
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute(f"PRAGMA cache_size=-{SQLITE_PAGE_CACHE_KB}")
+    conn.execute(f"PRAGMA mmap_size={SQLITE_MMAP_SIZE}")
+    _init_schema(conn)
+    return conn
+close
+
+Pillow
+High severity (75)
+Dependency - pip
+2 CVEs
+- 4 package files
+Active
+Last seen 14 minutes ago
+Summary
+Pillow@11.0.0 has 2 CVEs in 4 package files
+
+The highest severity CVE is pillow: Pillow: Out-of-bounds Write via Specially Crafted PSD Image
+
+See the Issues section for more details on each CVE
+
+Fix
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade Pillow@11.0.0 to 12.2.0
+
+To resolve all issues in Lovable/requirements.txt, upgrade Pillow@11.0.0 to 12.2.0
+
+To resolve all issues in Qwen Coder/pdf_intelligence/requirements.txt, upgrade Pillow@10.3.0 to 12.2.0
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade Pillow@11.0.0 to 12.2.0
+
+Issues
+Issue details
+Pillow @11.0.0 - pillow: Pillow: Out-of-bounds Write via Specially Crafted PSD Image
+High severity (75)
+Pillow is a Python imaging library. From 10.3.0 to before 12.1.1, n out-of-bounds write may be triggered when loading a specially crafted PSD image. This vulnerability is fixed in 12.1.1.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade Pillow@11.0.0 to 12.1.1
+
+To resolve all issues in Lovable/requirements.txt, upgrade Pillow@11.0.0 to 12.1.1
+
+To resolve all issues in Qwen Coder/pdf_intelligence/requirements.txt, upgrade Pillow@10.3.0 to 12.1.1
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade Pillow@11.0.0 to 12.1.1
+
+Locations
+4
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 10
+Pillow==11.0.0              # already a pdfplumber dep; reused for OCR rendering
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 25
+Pillow==11.0.0             # already a pdfplumber dep; reused for OCR rasterization
+sr104696/PDF-App-
+Qwen Coder/pdf_intelligence/requirements.txt
+Line 3
+Pillow==10.3.0
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 8
+Pillow==11.0.0              # already a pdfplumber dep; reused for OCR rendering
+Pillow @11.0.0 - Pillow: Denial of Service via decompression bomb in FITS image processing
+High severity (75)
+Pillow is a Python imaging library. Versions 10.3.0 through 12.1.1 did not limit the amount of GZIP-compressed data read when decoding a FITS image, making them vulnerable to decompression bomb attacks. A specially crafted FITS file could cause unbounded memory consumption, leading to denial of service (OOM crash or severe performance degradation). If users are unable to immediately upgrade, they should only open specific image formats, excluding FITS, as a workaround.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade Pillow@11.0.0 to 12.2.0
+
+To resolve all issues in Lovable/requirements.txt, upgrade Pillow@11.0.0 to 12.2.0
+
+To resolve all issues in Qwen Coder/pdf_intelligence/requirements.txt, upgrade Pillow@10.3.0 to 12.2.0
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade Pillow@11.0.0 to 12.2.0
+
+Locations
+4
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 10
+Pillow==11.0.0              # already a pdfplumber dep; reused for OCR rendering
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 25
+Pillow==11.0.0             # already a pdfplumber dep; reused for OCR rasterization
+sr104696/PDF-App-
+Qwen Coder/pdf_intelligence/requirements.txt
+Line 3
+Pillow==10.3.0
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 8
+Pillow==11.0.0              # already a pdfplumber dep; reused for OCR rendering
+close
+
+
+lxml
+High severity (75)
+Dependency - pip
+1 CVE
+- 3 package files
+Active
+Last seen 14 minutes ago
+Summary
+lxml@5.3.0 has 1 CVE in 3 package files
+
+The highest severity CVE is Default configuration of iterparse() and ETCompatXMLParser() allows XXE to local files
+
+See the Issues section for more details on each CVE
+
+Fix
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade lxml@5.3.0 to 6.1.0
+
+To resolve all issues in Lovable/requirements.txt, upgrade lxml@5.3.0 to 6.1.0
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade lxml@5.3.0 to 6.1.0
+
+Issues
+Issue details
+lxml @5.3.0 - Default configuration of iterparse() and ETCompatXMLParser() allows XXE to local files
+High severity (75)
+Impact
+Using either of the two parsers in the default configuration (with resolve_entities=True) allows untrusted XML input to read local files.
+
+Patches
+lxml 6.1.0 changes the default to resolve_entities='internal', thus disallowing local file access by default.
+
+Workarounds
+Setting the resolve_entities option explicitly to resolve_entities='internal' or resolve_entities=False disables the local file access.
+
+Resources
+Original report: https://bugs.launchpad.net/lxml/+bug/2146291
+
+The default option was changed to resolve_entities='internal' for the normal XML and HTML parsers in lxml 5.0. The default was not changed for iterparse() and ETCompatXMLParser() at the time. lxml 6.1 makes the safe option the default for all parsers.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade lxml@5.3.0 to 6.1.0
+
+To resolve all issues in Lovable/requirements.txt, upgrade lxml@5.3.0 to 6.1.0
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade lxml@5.3.0 to 6.1.0
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 23
+lxml==5.3.0                 # faster BS4 parser (falls back to html.parser if absent)
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 18
+lxml==5.3.0                # optional fast parser (falls back to html.parser if missing)
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 20
+lxml==5.3.0                 # faster BS4 parser (falls back to html.parser if absent)
+close
+
+pypdf
+High severity (75)
+Dependency - pip
+22 CVEs
+- 3 package files
+Active
+Last seen 14 minutes ago
+Summary
+pypdf@5.1.0 has 22 CVEs in 3 package files
+
+The highest severity CVE is PyPDF RAM Exhaustion Vulnerability
+
+See the Issues section for more details on each CVE
+
+Fix
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+Issues
+Issue details
+pypdf @5.1.0 - PyPDF RAM Exhaustion Vulnerability
+High severity (75)
+pypdf is a free and open-source pure-python PDF library. Prior to version 6.0.0, an attacker can craft a PDF which leads to the RAM being exhausted. This requires just reading the file if a series of FlateDecode filters is used on a malicious cross-reference stream. Other content streams are affected on explicit access. This issue has been fixed in 6.0.0. If an update is not possible, a workaround involves including the fixed code from pypdf.filters.decompress into the existing filters file.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.0.0
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.0.0
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.0.0
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf affected by possible infinite loop when reading DCT inline images without EOF marker
+High severity (75)
+pypdf is a free and open-source pure-python PDF library. Prior to version 6.1.3, an attacker who uses this vulnerability can craft a PDF which leads to an infinite loop. This requires parsing the content stream of a page which has an inline image using the DCTDecode filter. This has been fixed in pypdf version 6.1.3.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.1.3
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.1.3
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.1.3
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf manipulated LZWDecode streams can exhaust RAM
+High severity (75)
+pypdf is a free and open-source pure-python PDF library. Prior to version 6.1.3, an attacker who uses this vulnerability can craft a PDF which leads to large memory usage. This requires parsing the content stream of a page using the LZWDecode filter. This has been fixed in pypdf version 6.1.3.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.1.3
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.1.3
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.1.3
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service via crafted PDF
+High severity (75)
+pypdf is a free and open-source pure-python PDF library. Prior to 6.7.3, an attacker who uses this vulnerability can craft a PDF which leads to the RAM being exhausted. This requires accessing the xfa property of a reader or writer and the corresponding stream being compressed using /FlateDecode. This has been fixed in pypdf 6.7.3. As a workaround, apply the patch manually.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.7.3
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.7.3
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.7.3
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service via crafted PDF in non-strict mode
+High severity (75)
+pypdf is a free and open-source pure-python PDF library. Versions prior to 6.9.2 have a vulnerability in which an attacker can craft a PDF which leads to an infinite loop. This requires reading a file in non-strict mode. This has been fixed in pypdf 6.9.2. If users cannot upgrade yet, consider applying the changes from the patch manually.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.9.2
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.9.2
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.9.2
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - possible infinite loop when loading circular /Prev entries in cross-reference streams
+High severity (75)
+pypdf is a free and open-source pure-python PDF library. Prior to 6.7.2, an attacker who uses this vulnerability can craft a PDF which leads to an infinite loop. This requires reading the file. This has been fixed in pypdf 6.7.2. As a workaround, one may apply the patch manually.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.7.2
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.7.2
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.7.2
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service via crafted PDF with large font values
+Medium severity (65)
+pypdf is a free and open-source pure-python PDF library. Prior to 6.7.1, an attacker who uses this vulnerability can craft a PDF which leads to long runtimes and large memory consumption. This requires parsing the /ToUnicode entry of a font with unusually large values, for example during text extraction. This vulnerability is fixed in 6.7.1.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.7.1
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.7.1
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.7.1
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service via malformed PDF /FlateDecode stream
+Medium severity (65)
+pypdf is a free and open-source pure-python PDF library. Prior to 6.7.1, an attacker who uses this vulnerability can craft a PDF which leads to long runtimes. This requires a malformed /FlateDecode stream, where the byte-by-byte decompression is used. This vulnerability is fixed in 6.7.1.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.7.1
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.7.1
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.7.1
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service via crafted PDF with RunLengthDecode filter
+Medium severity (65)
+pypdf is a free and open-source pure-python PDF library. Prior to version 6.7.4, an attacker who uses this vulnerability can craft a PDF which leads to large memory usage. This requires parsing the content stream using the RunLengthDecode filter. This has been fixed in pypdf 6.7.4. As a workaround, consider applying the changes from PR #3664.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.7.4
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.7.4
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.7.4
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service via crafted PDF with ASCIIHexDecode filter
+Medium severity (65)
+pypdf is a free and open-source pure-python PDF library. Prior to version 6.7.5, an attacker who uses this vulnerability can craft a PDF which leads to long runtimes. This requires accessing a stream which uses the /ASCIIHexDecode filter. This issue has been patched in version 6.7.5.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.7.5
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.7.5
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.7.5
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service due to excessive memory consumption via crafted PDF
+Medium severity (65)
+pypdf is a free and open-source pure-python PDF library. Prior to 6.8.0, an attacker who uses this vulnerability can craft a PDF which leads to large memory usage. This requires parsing a content stream with a rather large /Length value, regardless of the actual data length inside the stream. This vulnerability is fixed in 6.8.0.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.8.0
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.8.0
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.8.0
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service due to excessive resource consumption from crafted PDF
+Medium severity (65)
+pypdf is a free and open-source pure-python PDF library. Versions prior to 6.9.1 allow an attacker to craft a malicious PDF which leads to long runtimes and/or large memory usage. Exploitation requires accessing an array-based stream with many entries. This issue has been fixed in version 6.9.1.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.9.1
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.9.1
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.9.1
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service via crafted PDF with missing /Root object
+Medium severity (65)
+pypdf is a free and open-source pure-python PDF library. Prior to version 6.6.0, pypdf has possible long runtimes for missing /Root object with large /Size values. An attacker who uses this vulnerability can craft a PDF which leads to possibly long runtimes for actually invalid files. This can be achieved by omitting the /Root entry in the trailer, while using a rather large /Size value. Only the non-strict reading mode is affected. This issue has been patched in version 6.6.0.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.6.0
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.6.0
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.6.0
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service via malformed PDF startxref entries
+Medium severity (65)
+pypdf is a free and open-source pure-python PDF library. Prior to version 6.6.0, pypdf has possible long runtimes for malformed startxref. An attacker who uses this vulnerability can craft a PDF which leads to possibly long runtimes for invalid startxref entries. When rebuilding the cross-reference table, PDF files with lots of whitespace characters become problematic. Only the non-strict reading mode is affected. Only the non-strict reading mode is affected. This issue has been patched in version 6.6.0.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.6.0
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.6.0
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.6.0
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf: Denial of Service via crafted PDF with TreeObject outlines
+Medium severity (55)
+pypdf is a free and open-source pure-python PDF library. Prior to 6.7.1, an attacker who uses this vulnerability can craft a PDF which leads to an infinite loop. This requires accessing the children of a TreeObject, for example as part of outlines. This vulnerability is fixed in 6.7.1.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.7.1
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.7.1
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.7.1
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf manipulated LZWDecode streams can exhaust RAM
+Medium severity (53)
+pypdf is a free and open-source pure-python PDF library. Prior to version 6.4.0, an attacker who uses this vulnerability can craft a PDF which leads to a memory usage of up to 1 GB per stream. This requires parsing the content stream of a page using the LZWDecode filter. This issue has been patched in version 6.4.0.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.4.0
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.4.0
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.4.0
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf Infinite Loop when processing outlines/bookmarks
+Medium severity (53)
+pypdf is a free and open-source pure-python PDF library. An attacker who uses an infinite loop vulnerability that is present in versions prior to 6.6.2 can craft a PDF which leads to an infinite loop. This requires accessing the outlines/bookmarks. This has been fixed in pypdf 6.6.2. If projects cannot upgrade yet, consider applying the changes from PR #3610 manually.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.6.2
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.6.2
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.6.2
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf is a free and open-source pure-python PDF library. In versions p ...
+Medium severity (50)
+pypdf is a free and open-source pure-python PDF library. In versions prior to 6.10.0, manipulated XMP metadata entity declarations can exhaust RAM. An attacker who exploits this vulnerability can craft a PDF which leads to large memory usage. This requires parsing the XMP metadata. This issue has been fixed in version 6.10.0.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.10.0
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.10.0
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.10.0
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - Possible long runtimes for wrong size values in incremental mode
+Medium severity (50)
+Impact
+An attacker who uses this vulnerability can craft a PDF which leads to long runtimes. This requires loading a PDF with a large trailer /Size value in incremental mode.
+
+Patches
+This has been fixed in pypdf==6.10.2.
+
+Workarounds
+If you cannot upgrade yet, consider applying the changes from PR #3735.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - Manipulated FlateDecode predictor parameters can exhaust RAM
+Medium severity (50)
+Impact
+An attacker who uses this vulnerability can craft a PDF which leads to the RAM being exhausted. This requires accessing a stream compressed using /FlateDecode with a /Predictor unequal 1 and large predictor parameters.
+
+Patches
+This has been fixed in pypdf==6.10.2.
+
+Workarounds
+If you cannot upgrade yet, consider applying the changes from PR #3734.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - pypdf has long runtimes for wrong size values in cross-reference and object streams
+Medium severity (50)
+Impact
+An attacker who uses this vulnerability can craft a PDF which leads to long runtimes. This requires cross-reference streams with wrong large /Size values or object streams with wrong large /N values.
+
+Patches
+This has been fixed in pypdf==6.10.1.
+
+Workarounds
+If you cannot upgrade yet, consider applying the changes from PR #3733.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.10.1
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.10.1
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.10.1
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+pypdf @5.1.0 - Manipulated FlateDecode image dimensions can exhaust RAM
+Medium severity (50)
+Impact
+An attacker who uses this vulnerability can craft a PDF which leads to the RAM being exhausted. This requires accessing an image using /FlateDecode with large size values.
+
+Patches
+This has been fixed in pypdf==6.10.2.
+
+Workarounds
+If you cannot upgrade yet, consider applying the changes from PR #3734.
+
+To resolve all issues in Claude/Claude Code 1/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+To resolve all issues in Lovable/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+To resolve all issues in Vibestral/Vibestral 2/pdf_intelligence/requirements.txt, upgrade pypdf@5.1.0 to 6.10.2
+
+Locations
+3
+sr104696/PDF-App-
+Claude/Claude Code 1/requirements.txt
+Line 9
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+sr104696/PDF-App-
+Lovable/requirements.txt
+Line 6
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+sr104696/PDF-App-
+Vibestral/Vibestral 2/pdf_intelligence/requirements.txt
+Line 7
+pypdf==5.1.0                # pure-Python fallback / encrypted PDFs
+close
