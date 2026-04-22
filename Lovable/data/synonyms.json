@@ -1,0 +1,10 @@
+{
+  "_comment": "User-editable synonym map. Each key maps to a list of equivalent terms. Used as a small additive boost in BM25 ranking, NOT as primary retrieval.",
+  "car": ["automobile", "vehicle", "auto"],
+  "buy": ["purchase", "acquire", "procure"],
+  "fast": ["quick", "rapid", "swift"],
+  "doctor": ["physician", "clinician"],
+  "ai": ["artificial intelligence", "machine learning", "ml"],
+  "law": ["statute", "regulation", "legislation"],
+  "money": ["cash", "currency", "funds"]
+}

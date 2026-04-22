@@ -1,0 +1,1542 @@
+Directory structure:
+└── firstflush-pdf-ninja/
+    ├── README.md
+    ├── LICENSE
+    ├── pyproject.toml
+    ├── requirements.txt
+    └── pdf_ninja/
+        ├── __init__.py
+        ├── dataclasses.py
+        ├── exc.py
+        ├── ninja.py
+        ├── types.py
+        ├── builders/
+        │   ├── __init__.py
+        │   ├── parsed_pdf.py
+        │   └── pdf_context.py
+        ├── config/
+        │   └── constants.py
+        ├── extractors/
+        │   ├── __init__.py
+        │   ├── _base.py
+        │   ├── figure/
+        │   │   ├── __init__.py
+        │   │   └── extractor.py
+        │   ├── image/
+        │   │   ├── __init__.py
+        │   │   └── extractor.py
+        │   ├── metadata/
+        │   │   ├── __init__.py
+        │   │   └── extractor.py
+        │   ├── table/
+        │   │   ├── __init__.py
+        │   │   ├── _camelot.py
+        │   │   ├── _meta.py
+        │   │   ├── _postprocessor.py
+        │   │   ├── _tabula.py
+        │   │   └── extractor.py
+        │   └── text/
+        │       ├── __init__.py
+        │       └── extractor.py
+        └── integrations/
+            ├── __init__.py
+            └── llama_index.py
+
+================================================
+FILE: README.md
+================================================
+<p align="center">
+  <img src="https://i.imgur.com/xqucH5L.png" width="300" alt="PDF Ninja logo">
+</p>
+
+# 🥷 PDF-Ninja
+
+**PDF-Ninja** is a modular, Python-based PDF parsing **library** built for **AI and data extraction pipelines** — especially **RAG (Retrieval-Augmented Generation)** systems.
+
+It’s designed for cases where PDFs aren’t just blobs of text, but complex documents with **tables, figures, images, metadata, and structured text** that need to be extracted cleanly and consistently.
+
+
+## 💡 Why It Exists
+
+Tools like `pdfplumber`, `camelot`, and `tabula` each excel at different parts of the PDF parsing problem — text extraction, table recognition, and layout analysis.  
+PDF-Ninja brings them together into a single orchestration layer that:
+
+- Extracts **text, tables, images, figures, and metadata** in one pass  
+- Preserves **page structure and element order** via bounding boxes  
+- Produces a **standardized JSON-ready object model**  
+- Provides a foundation for **embedding, chunking, and vectorization** in RAG pipelines
+
+It’s purpose-built for **machine understanding** of real-world PDFs such as:
+- Financial filings (10-K, 10-Q, MD&A)
+- Technical reports
+- Scientific papers
+- Corporate disclosures
+
+
+## ⚙️ Core Concepts
+
+### 🧩 Extractors
+Each content type (text, table, image, figure, metadata) has its own extractor.  
+They run independently but output a common format of `PdfElement` objects.
+
+### 🧱 Builders
+Builders assemble the extracted elements into higher-level data structures:
+- `PdfPage` — ordered list of elements for a single page  
+- `ParsedPdf` — the fully structured document, metadata included
+
+### 🧠 Contexts
+`PdfContext` manages shared access to backend engines:
+- `pdfplumber` for text and layout  
+- `camelot` and `tabula` for tables  
+- `pypdf` for metadata and encryption handling  
+
+
+## 🧰 Tech Stack
+
+| Component | Purpose |
+|------------|----------|
+| **pdfplumber** | text and layout extraction |
+| **camelot-py** | ruled-line table detection |
+| **tabula-py** | whitespace-based table parsing |
+| **pypdf** | metadata, encryption, PDF structure |
+| **dataclasses** | clean internal schema for all content |
+| **typing / pathlib / logging** | modern Python hygiene |
+
+
+## 📦 Output Schema
+
+A parsed PDF produces a structured object that’s JSON-serializable:
+
+```json
+{
+  "source": "annual_report_2023.pdf",
+  "metadata": { "title": "Annual Report 2023", "page_count": 42 },
+  "pages": [
+    {
+      "page_number": 1,
+      "elements": [
+        { "type": "text", "order": 0, "content": "Overview...", "bbox": [72, 95, 520, 110] },
+        { "type": "table", "order": 1, "rows": [["Mine", "AISC"], ["Cigar Lake", "1.23"]], "bbox": [70, 200, 500, 340] }
+      ]
+    }
+  ]
+}
+```
+
+This structure is designed to plug directly into **chunking, embedding, and vector storage** pipelines.
+
+
+## 🚀 Design Goals
+
+- **RAG-focused** — output is embedding-ready  
+- **Deterministic structure** — always reproducible and traceable  
+- **Extensible** — add new extractors or post-processors easily  
+- **Library design** — clean API, no web server or framework dependencies  
+- **Human-readable** — clear data model for debugging and analysis  
+
+
+## 🧭 Project Status
+
+PDF-Ninja is under active development.  
+Its first milestone focuses on:
+- Stable text + table extraction across varied layouts  
+- Page-ordered output suitable for document intelligence pipelines  
+- Extensible builder patterns for future extractors (charts, figures, OCR, etc.)
+
+
+
+================================================
+FILE: LICENSE
+================================================
+Copyright (c) 2025 Michael Pearce (github.com/FirstFlush)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the Software), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+
+================================================
+FILE: pyproject.toml
+================================================
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf-ninja"
+version = "0.1.0"
+description = "Layout-aware PDF parser that extracts text, tables, and metadata into structured JSON."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Michael Pearce", email = "firstflush@protonmail.com" }
+]
+keywords = ["pdf", "parser", "pdfplumber", "camelot", "tabula", "layout"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Text Processing :: Markup",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+dependencies = [
+    "pdfplumber>=0.11.0",
+    "camelot-py[cv]>=1.0.0",
+    "tabula-py>=2.9.0",
+    "pypdf>=3.15.0",
+]
+
+[project.optional-dependencies]
+llamaindex = ["llama-index>=0.10.0"]
+langchain = ["langchain>=0.2.0"]
+
+[project.urls]
+Homepage = "https://github.com/FirstFlush/pdf-ninja"
+Repository = "https://github.com/FirstFlush/pdf-ninja"
+Issues = "https://github.com/FirstFlush/pdf-ninja/issues"
+
+
+
+================================================
+FILE: requirements.txt
+================================================
+camelot-py==1.0.9
+cffi==2.0.0
+chardet==5.2.0
+charset-normalizer==3.4.3
+click==8.3.0
+cryptography==46.0.2
+distro==1.9.0
+et_xmlfile==2.0.0
+numpy==2.2.6
+opencv-python-headless==4.12.0.88
+openpyxl==3.1.5
+pandas==2.3.3
+pdfminer.six==20250506
+pdfplumber==0.11.7
+pillow==11.3.0
+pycparser==2.23
+pypdf==3.17.4
+pypdfium2==4.30.0
+python-dateutil==2.9.0.post0
+pytz==2025.2
+six==1.17.0
+tabula-py==2.10.0
+tabulate==0.9.0
+typing_extensions==4.15.0
+tzdata==2025.2
+
+
+
+================================================
+FILE: pdf_ninja/__init__.py
+================================================
+from .dataclasses import ParsedPdf, PdfElement, PdfPage
+from .ninja import PdfNinja
+from .types import ExtractorConfig
+from .exc import PdfNinjaError
+
+__all__ = [
+    'ParsedPdf',
+    'PdfElement',
+    'PdfPage',
+    'PdfNinja',
+    'PdfNinjaError',
+    'ExtractorConfig',
+]
+
+
+================================================
+FILE: pdf_ninja/dataclasses.py
+================================================
+from camelot.core import TableList
+from dataclasses import dataclass, field
+from pdfplumber.pdf import PDF
+from pypdf import PdfReader
+from typing import Any, Optional, Literal
+
+ElementType = Literal["text", "table", "image", "figure"]
+
+
+@dataclass
+class CamelotTables:
+    
+    lattice: Optional[TableList] = None
+    stream: Optional[TableList] = None
+
+
+@dataclass
+class PdfContext:
+
+    pypdf_reader: PdfReader    
+    pdf_plumber: Optional[PDF] = None
+    camelot_tables: Optional[CamelotTables] = None
+    tabula_tables: Optional[dict[str, Any]] = None
+
+
+@dataclass
+class ExtractedElements:
+    text: Optional[dict[int, list["PdfElement"]]] = field(default_factory=dict)
+    tables: Optional[dict[int, list["PdfElement"]]] = field(default_factory=dict)
+    images: Optional[dict[int, list["PdfElement"]]] = field(default_factory=dict)
+    figures: Optional[dict[int, list["PdfElement"]]] = field(default_factory=dict)
+    meta: dict[str, Any] = field(default_factory=dict)
+   
+    
+@dataclass
+class PdfElement:
+    """
+    Represents a single piece of content on a page — text block, table, image, or figure.
+    """
+    type: ElementType
+    page: int
+    order: int = field(default=-1)              # set downstream when PdfPage is being built
+    content: Optional[str] = None               # Used for text or textified tables
+    rows: Optional[list[list[str | None]]] = None      # Used for structured tables
+    bbox: Optional[list[float]] = None          # [x0, y0, x1, y1]
+    font_size: Optional[float] = None
+    font_name: Optional[str] = None
+    meta: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class PdfPage:
+    """
+    Represents a single page of a PDF, containing multiple elements in reading order.
+    """
+    page_number: int
+    elements: list[PdfElement] = field(default_factory=list)
+
+    def stringify(
+            self,
+            include_tables: bool = True,
+            include_images: bool = False
+    ) -> str:
+        """
+        Returns the page’s text content as a flattened string in reading order.
+        Tables can be optionally included as textified rows.
+        Images and figures are skipped by default.
+        """
+        lines = []
+        for el in sorted(self.elements, key=lambda e: e.order):
+            if el.type == "text":
+                lines.append(el.content or "")
+            elif el.type == "table" and include_tables:
+                if el.rows:
+                    rows_as_text = [" | ".join((a if a is not None else "") for a in r) for r in el.rows]
+                    lines.append("\n".join(rows_as_text))
+                elif el.content:
+                    lines.append(el.content)
+            elif el.type in ("image", "figure") and include_images:
+                caption = el.meta.get("caption")
+                if caption:
+                    lines.append(f"[Image: {caption}]")
+        return "\n\n".join(lines).strip()
+
+
+@dataclass
+class ParsedPdf:
+    """
+    Represents a fully parsed PDF document, including metadata and all pages.
+    """
+    source: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+    pages: list[PdfPage] = field(default_factory=list)
+
+    def stringify(
+        self,
+        include_tables: bool = True,
+        include_images: bool = False
+    ) -> str:
+        """
+        Returns the entire document as a single concatenated text string,
+        in page and element order.
+        """
+        page_texts = [
+            page.stringify(include_tables=include_tables, include_images=include_images)
+            for page in sorted(self.pages, key=lambda p: p.page_number)
+        ]
+        return "\n\n--- PAGE BREAK ---\n\n".join(filter(None, page_texts))
+
+    def to_dict(self) -> dict:
+        """
+        Converts the ParsedPdf into a serializable dictionary.
+        """
+        return {
+            "source": self.source,
+            "metadata": self.metadata,
+            "pages": [
+                {
+                    "page_number": p.page_number,
+                    "elements": [vars(e) for e in p.elements]
+                }
+                for p in self.pages
+            ],
+        }
+
+
+
+================================================
+FILE: pdf_ninja/exc.py
+================================================
+
+class PdfNinjaError(Exception):
+    """Base class for any pdf-ninja custom exceptions"""
+    pass
+
+class PdfNinjaParsingError(PdfNinjaError):
+    """Raised when any underlying PDF parsing tool fails."""
+    pass
+
+
+================================================
+FILE: pdf_ninja/ninja.py
+================================================
+import logging
+from pathlib import Path
+import pdfplumber
+from .builders.pdf_context import PdfContextBuilder
+from .builders.parsed_pdf import PdfBuilder
+from .dataclasses import ExtractedElements, PdfContext, ParsedPdf
+from .exc import PdfNinjaParsingError, PdfNinjaError
+from .extractors.figure.extractor import FigureExtractor
+from .extractors.image.extractor import ImageExtractor
+from .extractors.metadata.extractor import MetadataExtractor
+from .extractors.table.extractor import TableExtractor
+from .extractors.text.extractor import TextExtractor
+from .types import ExtractorConfig
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+
+class PdfNinja:
+    
+    def __init__(self):
+        self.figure_extractor = FigureExtractor()
+        self.image_extractor = ImageExtractor()
+        self.metadata_extractor = MetadataExtractor()
+        self.table_extractor = TableExtractor()
+        self.text_extractor = TextExtractor()
+
+    def parse(self, path: Path, extractor_config: ExtractorConfig | None = None) -> ParsedPdf:
+        if not extractor_config:
+            extractor_config = {}
+        try:
+            with pdfplumber.open(path, **extractor_config.get("pdf_plumber", {})) as pdf:
+                pdf_context = self._build_context(
+                    path=path, 
+                    pdf_plumber_obj=pdf, 
+                    extractor_config=extractor_config
+                )
+                return self._parse(path=path, ctx=pdf_context)
+        except PdfNinjaError:
+            raise
+        except (OSError, ValueError) as e:
+            raise PdfNinjaParsingError(f"Failed to open PDF with pdfplumber: {e}") from e
+        except Exception as e:
+            raise PdfNinjaParsingError(f"Unexpected error while parsing {path.name}: {e}") from e
+
+    def _parse(self, path: Path, ctx: PdfContext) -> ParsedPdf:
+        extracted_elements = self._extract(path, ctx)
+        logger.debug("Extracted all elements. Building ParsedPdf object...")    
+        pdf = self._build_pdf(path=path, extracted=extracted_elements)
+        logger.debug("ParsedPdf object successfully built")
+        return pdf
+
+    def _extract(self, path: Path, ctx: PdfContext) -> ExtractedElements:
+        return ExtractedElements(
+            text = self.text_extractor.extract(ctx),
+            tables = self.table_extractor.extract(ctx),
+            images = self.image_extractor.extract(ctx),
+            figures = self.figure_extractor.extract(ctx),
+            meta = self.metadata_extractor.extract_metadata(path=path, pdf_reader=ctx.pypdf_reader),
+        )
+
+    def _build_pdf(self, path: Path, extracted: ExtractedElements) -> ParsedPdf:
+        return PdfBuilder(path=path, extracted_elements=extracted).build_parsed_pdf()
+
+    def _build_context(
+            self, path: Path, 
+            pdf_plumber_obj: pdfplumber.pdf.PDF, 
+            extractor_config: ExtractorConfig
+    ) -> PdfContext:
+        """Initialize all backend PDF objects safely and return a populated PdfContext."""
+        return PdfContextBuilder().build(
+            path=path,
+            pdf_plumber_obj=pdf_plumber_obj,
+            extractor_config=extractor_config,
+        )
+
+
+
+================================================
+FILE: pdf_ninja/types.py
+================================================
+from typing import Any, TypeAlias, TypedDict
+from typing_extensions import NotRequired
+from .dataclasses import PdfElement
+
+ElementsByPage: TypeAlias = dict[int, list[PdfElement]]
+
+
+class ExtractorConfig(TypedDict, total=False):
+    
+    camelot: NotRequired[dict[str, Any]]
+    pdf_plumber: NotRequired[dict[str, Any]]
+    pypdf: NotRequired[dict[str, Any]]
+    tabula: NotRequired[dict[str, Any]]
+    
+    
+    
+
+
+================================================
+FILE: pdf_ninja/builders/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: pdf_ninja/builders/parsed_pdf.py
+================================================
+from pathlib import Path
+from ..dataclasses import ExtractedElements, ParsedPdf, PdfPage, PdfElement
+
+
+class PdfBuilder:
+    
+    def __init__(self, path: Path, extracted_elements: ExtractedElements):
+        self.extracted = extracted_elements
+        self.path = path
+
+    def build_parsed_pdf(self) -> ParsedPdf:
+        """
+        Assemble a full ParsedPdf object from extracted elements.
+        """
+        pages: list[PdfPage] = []
+        page_map: dict[int, list[PdfElement]] = {}
+        for element_dict in [
+            self.extracted.text,
+            self.extracted.tables,
+            self.extracted.images,
+            self.extracted.figures,
+        ]:
+            if not element_dict:
+                continue
+            for page_num, elements in element_dict.items():
+                page_map.setdefault(page_num, []).extend(elements)
+
+        # Sort elements within each page and assign reading order
+        for page_num, elements in sorted(page_map.items()):
+            sorted_elements = self._sort_elements(elements)
+            for order, el in enumerate(sorted_elements):
+                el.order = order
+            pages.append(PdfPage(page_number=page_num, elements=sorted_elements))
+
+        # Metadata may include title, author, etc.
+        metadata = self.extracted.meta or {}
+
+        return ParsedPdf(
+            source=metadata.get("source", ""),
+            metadata=metadata,
+            pages=pages,
+        )
+
+    def _sort_elements(self, elements: list[PdfElement]) -> list[PdfElement]:
+        """
+        Sort page elements roughly in visual reading order:
+        top-to-bottom, then left-to-right.
+        pdfplumber coordinates increase downward (y grows toward page bottom),
+        so sort ascending by y0, then x0.
+        """
+        sorted_elements = sorted(
+            elements,
+            key=lambda el: (
+                el.bbox[1] if el.bbox else float("inf"),  # top (y0)
+                el.bbox[0] if el.bbox else float("inf"),  # left (x0)
+            ),
+        )
+        return sorted_elements
+
+
+
+================================================
+FILE: pdf_ninja/builders/pdf_context.py
+================================================
+from camelot.core import TableList
+from camelot.io import read_pdf as read_pdf_camelot
+import logging
+from pathlib import Path
+from tabula.io import read_pdf as read_pdf_tabula
+from tabula.errors import JavaNotFoundError
+from typing import Any, cast
+import pdfplumber
+from pypdf import PdfReader
+from ..dataclasses import PdfContext, CamelotTables
+from ..exc import PdfNinjaParsingError
+from ..types import ExtractorConfig
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+
+class PdfContextBuilder:
+    
+    def build(
+            self, 
+            path: Path, 
+            pdf_plumber_obj: pdfplumber.pdf.PDF, 
+            extractor_config: ExtractorConfig | None = None
+    ) -> PdfContext:
+        if not extractor_config:
+            extractor_config = {}
+        return PdfContext(
+            pdf_plumber=pdf_plumber_obj,
+            camelot_tables = self._camelot(path, config=extractor_config.get("camelot", {})),
+            pypdf_reader = self._pypdf(path, config=extractor_config.get("pypdf", {})),
+            tabula_tables = self._tabula(path, config=extractor_config.get("tabula", {})),
+        )
+
+    def _camelot(self, path: Path, config: dict[str, Any]) -> CamelotTables:
+        try:
+            lattice_tables = read_pdf_camelot(str(path), pages="all", flavor="lattice", **config)
+            stream_tables = read_pdf_camelot(str(path), pages="all", flavor="stream", **config)
+            return CamelotTables(
+                lattice=lattice_tables,
+                stream=stream_tables,
+            )
+        
+        except (OSError, ValueError) as e:
+            raise PdfNinjaParsingError(f"Camelot I/O error for {path.name}: {e}") from e
+
+        except Exception as e:
+            raise PdfNinjaParsingError(f"Camelot failed to parse {path.name}: {e}") from e
+
+    def _pypdf(self, path: Path, config: dict[str, Any]) -> PdfReader:
+        try:
+            return PdfReader(str(path), **config)
+        except OSError as e:
+            raise PdfNinjaParsingError(f"Cannot open file {path.name}: {e}") from e
+        except Exception as e:
+            raise PdfNinjaParsingError(f"pypdf failed to read structure of {path.name}: {e}") from e
+
+    def _tabula(self, path: Path, config: dict[str, Any]) -> dict[str, Any]:
+        output_format = config.get("output_format")
+        if output_format and output_format != "json":
+            logger.debug(f"Overriding Tabula config output_format value `{output_format}`. PdfNinja requires `json`")
+        config["output_format"] = "json"
+        try:
+            raw = read_pdf_tabula(str(path), pages="all", **config)
+            return cast(dict[str, Any], raw)
+
+        except JavaNotFoundError as e:
+            raise PdfNinjaParsingError(
+                f"Tabula requires Java (not found) when parsing {path.name}: {e}"
+            ) from e
+        except (OSError, ValueError) as e:
+            raise PdfNinjaParsingError(f"Tabula I/O error for {path.name}: {e}") from e
+        except Exception as e:
+            raise PdfNinjaParsingError(f"Tabula failed to parse {path.name}: {e}") from e
+
+
+
+================================================
+FILE: pdf_ninja/config/constants.py
+================================================
+
+TABLE_MAX_CELL_LEN = 70
+TABLE_IOU_THRESHOLD = 0.7
+
+
+
+================================================
+FILE: pdf_ninja/extractors/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: pdf_ninja/extractors/_base.py
+================================================
+from abc import ABC, abstractmethod
+from typing import Any
+from ..dataclasses import PdfContext
+
+class BaseElementExtractor(ABC):
+    
+    @abstractmethod
+    def extract(self, ctx: PdfContext) -> Any:
+        pass
+
+
+================================================
+FILE: pdf_ninja/extractors/figure/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: pdf_ninja/extractors/figure/extractor.py
+================================================
+from .._base import BaseElementExtractor
+from ...dataclasses import PdfContext
+
+
+class FigureExtractor(BaseElementExtractor):
+    
+    def extract(self, ctx: PdfContext):
+        ...
+
+
+================================================
+FILE: pdf_ninja/extractors/image/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: pdf_ninja/extractors/image/extractor.py
+================================================
+from .._base import BaseElementExtractor
+from ...dataclasses import PdfContext
+
+
+class ImageExtractor(BaseElementExtractor):
+    
+    def extract(self, ctx: PdfContext):
+        ...
+
+
+================================================
+FILE: pdf_ninja/extractors/metadata/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: pdf_ninja/extractors/metadata/extractor.py
+================================================
+from pathlib import Path
+from pypdf import PdfReader
+from typing import Any
+
+
+class MetadataExtractor:
+    
+    def extract_metadata(self, path: Path, pdf_reader: PdfReader) -> dict[str, Any]:
+        
+        reader_meta = pdf_reader.metadata or {}
+        meta = {
+            "title": reader_meta.get("/Title"),
+            "author": reader_meta.get("/Author"),
+            "creator": reader_meta.get("/Creator"),
+            "producer": reader_meta.get("/Producer"),
+            "subject": reader_meta.get("/Subject"),
+            "keywords": reader_meta.get("/Keywords"),
+            "creation_date": self._parse_pdf_date(reader_meta.get("/CreationDate")),
+            "mod_date": self._parse_pdf_date(reader_meta.get("/ModDate")),
+            "page_count": len(pdf_reader.pages),
+            "encrypted": pdf_reader.is_encrypted,
+            "pdf_version": getattr(pdf_reader, "pdf_header_version", None),
+        }
+        
+        return {k: v for k, v in meta.items() if v is not None}       
+
+    def _parse_pdf_date(self, value: Any) -> str | None:
+        """
+        Converts PDF-style date strings like 'D:20230805123000Z' to ISO 8601.
+        """
+        if not isinstance(value, str) or not value.startswith("D:"):
+            return None
+        try:
+            val = value[2:]
+            year = val[0:4]
+            month = val[4:6] or "01"
+            day = val[6:8] or "01"
+            hour = val[8:10] or "00"
+            minute = val[10:12] or "00"
+            second = val[12:14] or "00"
+            return f"{year}-{month}-{day}T{hour}:{minute}:{second}Z"
+        except Exception:
+            return None
+
+
+================================================
+FILE: pdf_ninja/extractors/table/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: pdf_ninja/extractors/table/_camelot.py
+================================================
+from camelot.core import TableList, Table
+from ...config.constants import TABLE_IOU_THRESHOLD, TABLE_MAX_CELL_LEN
+from ...dataclasses import PdfContext, PdfElement
+from ...types import ElementsByPage
+from ._meta import TableMeta
+
+class CamelotExtractor:
+
+    def extract(self, ctx: PdfContext) -> ElementsByPage:
+        """
+        Convert pre-parsed Camelot TableList into structured PdfElement objects.
+        Assumes ctx.camelot_tables has been filled by PdfContext.
+        """
+        if not ctx.camelot_tables:
+            return {}
+
+        lattice = list(ctx.camelot_tables.lattice or [])
+        stream = list(ctx.camelot_tables.stream or [])
+        combined = TableList(lattice + stream)
+        deduplicated = self._dedupe_by_bbox(tables=combined)
+
+        return self._create_elements(deduplicated)
+        
+    def _create_elements(self, tables: TableList) -> ElementsByPage:
+        results: ElementsByPage = {}
+        for table in tables:
+            try:
+                page_num = int(getattr(table, "page", 1))
+                bbox = getattr(table, "_bbox", None)
+                if not bbox or len(bbox) != 4:
+                    continue
+                x0, y0, x1, y1 = bbox
+
+                # Normalize table cells: strip text and convert blanks to None
+                raw_rows = table.df.values.tolist()
+                rows = [
+                    [cell.strip() if isinstance(cell, str) and cell.strip() else None for cell in row]
+                    for row in raw_rows
+                ]
+
+                if any(cell and len(cell) > TABLE_MAX_CELL_LEN for row in rows for cell in row):
+                    continue
+                
+                meta: TableMeta = {
+                    "source": "camelot",
+                    "flavor": getattr(table, "flavor", "unknown"),
+                    "accuracy": getattr(table, "accuracy", None),
+                    "columns_detected": table.shape[1] if hasattr(table, "shape") else None,
+                    "rows_detected": table.shape[0] if hasattr(table, "shape") else None,
+                    "page_area": (x0, y0, x1, y1),
+                }
+
+                element = PdfElement(
+                    type="table",
+                    page=page_num,
+                    rows=rows,
+                    bbox=[x0, y0, x1, y1],
+                    meta=dict(meta),
+                )
+                results.setdefault(page_num, []).append(element)
+
+            except Exception:
+                # Skip this table if it’s malformed, but don’t break extraction
+                continue
+
+        return results
+
+    def _dedupe_by_bbox(self, tables: TableList) -> TableList:
+        unique: list[Table] = []
+
+        for t in tables:
+            # Skip tables with missing bbox
+            if not getattr(t, "_bbox", None):
+                continue
+
+            # check if overlaps with an existing one
+            duplicate_index: int | None = None
+            for i, u in enumerate(unique):
+                if self._iou(t._bbox, u._bbox) > TABLE_IOU_THRESHOLD:
+                    duplicate_index = i
+                    break
+
+            if duplicate_index is None:
+                # no overlap → keep
+                unique.append(t)
+            else:
+                # overlap found — decide which to keep
+                current = unique[duplicate_index]
+                # prefer stream over lattice
+                if getattr(t, "flavor", "") == "stream" and getattr(current, "flavor", "") == "lattice":
+                    unique[duplicate_index] = t
+                # otherwise, keep existing
+                else:
+                    continue
+
+        return TableList(unique)
+
+
+    def _iou(
+            self, 
+            b1: tuple[float, float, float, float] | None, 
+            b2: tuple[float, float, float, float]| None
+    ) -> float:
+        if not b1 or not b2:
+            return 0
+        x0 = max(b1[0], b2[0])
+        y0 = max(b1[1], b2[1])
+        x1 = min(b1[2], b2[2])
+        y1 = min(b1[3], b2[3])
+        inter_area = max(0, x1 - x0) * max(0, y1 - y0)
+        b1_area = (b1[2] - b1[0]) * (b1[3] - b1[1])
+        b2_area = (b2[2] - b2[0]) * (b2[3] - b2[1])
+        union_area = b1_area + b2_area - inter_area
+        return inter_area / union_area if union_area else 0
+
+
+
+================================================
+FILE: pdf_ninja/extractors/table/_meta.py
+================================================
+from typing import Literal, Optional, TypedDict
+
+
+class TableMeta(TypedDict):
+    source: Literal["camelot", "tabula"]
+    flavor: Literal["lattice", "stream", "unknown"]
+    accuracy: Optional[float]                               # Camelot's geometric accuracy score (0–100). Tabula does not provide accuracy score.
+    columns_detected: Optional[int]
+    rows_detected: Optional[int]
+    page_area: Optional[tuple[float, float, float, float]]  # [x0, y0, x1, y1] bounding box on page
+
+
+
+
+================================================
+FILE: pdf_ninja/extractors/table/_postprocessor.py
+================================================
+from __future__ import annotations
+import logging
+import re
+from dataclasses import replace
+from typing import Iterable, List, Tuple, Dict, Any, Callable
+
+import numpy as np
+import pandas as pd
+
+from ...dataclasses import PdfElement
+from ...types import ElementsByPage
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+
+_NUMERIC_RE = re.compile(r"""
+    ^\s*                # leading space
+    [\(\+\-]?           # sign or parentheses
+    (?:
+        \d{1,3}         # 1-3 digits
+        (?:[, ]\d{3})*  # optional thousands groups
+        |\d+            # or just digits
+    )
+    (?:\.\d+)?          # optional decimal
+    (?:\s?[%$A-Za-z]*)? # optional units/symbols (%, $, USD, lb, etc.)
+    \s*$
+""", re.X)
+
+_HEADER_TOKEN_HINTS = re.compile(
+    r"(year|quarter|three|months|ended|notes?|highlights?|currency|usd|cad|unaudited|audited)",
+    re.I,
+)
+
+class TablePostprocessor:
+    """
+    Structural cleanup for Camelot-extracted tables embedded in PdfElement.meta["_camelot_table"].
+
+    Pipeline:
+      1) normalize dataframe cells (strip newlines/whitespace)
+      2) compute row features (numeric_ratio, header_likelihood)
+      3) detect header block (possibly multi-row), collapse into a single header row
+      4) split into logical subtables on (a) reappearing header-like rows, (b) large vertical gaps
+      5) recompute bbox per subtable via geometry from table.cells
+    """
+
+    def __init__(
+        self,
+        # header detection
+        min_cols_for_header: int = 2,
+        numeric_ratio_header_max: float = 0.35,
+        header_token_boost: float = 0.15,
+        # splitting
+        gap_multiplier: float = 1.6,   # > median_gap * multiplier => split
+        reheader_allow_numeric_ratio_max: float = 0.5,
+    ):
+        self.min_cols_for_header = min_cols_for_header
+        self.numeric_ratio_header_max = numeric_ratio_header_max
+        self.header_token_boost = header_token_boost
+        self.gap_multiplier = gap_multiplier
+        self.reheader_allow_numeric_ratio_max = reheader_allow_numeric_ratio_max
+
+    def process(self, elements_by_page: ElementsByPage) -> ElementsByPage:
+        return elements_by_page
+        
+    def _process(self, elements_by_page: ElementsByPage) -> ElementsByPage:
+        processed: ElementsByPage = {}
+
+        for page_num, elements in elements_by_page.items():
+            out: list[PdfElement] = []
+            for elem in elements:
+                if elem.type != "table":
+                    out.append(elem)
+                    continue
+
+                try:
+                    cleaned = self._process_one(elem)
+                    out.extend(cleaned)
+                except Exception as e:
+                    logger.debug(f"[postprocess] p{page_num} table failed: {type(e).__name__}: {e}")
+                    out.append(elem)
+
+            processed[page_num] = out
+
+        return processed
+
+    def _process_one(self, elem: PdfElement) -> list[PdfElement]:
+        table = elem.meta.get("_camelot_table")
+        df: pd.DataFrame | None = getattr(table, "df", None)
+        cells: list[Any] | None = getattr(table, "cells", None)
+        if df is None or cells is None:
+            return [elem]  # nothing to do
+
+        df = self._normalize_df(df)
+
+        # features by row
+        numeric_mask = df.apply(lambda s: s.map(self._is_numeric_like))
+        nonempty_mask = df.apply(lambda s: s.map(self._is_nonempty))
+        header_mask = df.apply(lambda s: s.map(self._has_header_tokens))
+        numeric_ratio = numeric_mask.mean(axis=1).to_numpy()
+        nonempty_ratio = nonempty_mask.mean(axis=1).to_numpy()
+        header_hint = header_mask.any(axis=1).to_numpy()
+        # numeric_ratio = df.applymap(self._is_numeric_like).mean(axis=1).to_numpy()
+        # nonempty_ratio = df.applymap(self._is_nonempty).mean(axis=1).to_numpy()
+        # header_hint = df.applymap(self._has_header_tokens).any(axis=1).to_numpy()
+
+        # header score: prefer non-numeric, non-empty, token-hinted rows
+        header_score = (1 - numeric_ratio) * nonempty_ratio + header_hint.astype(float) * self.header_token_boost
+
+        # locate top header block
+        header_rows = self._detect_header_block(df, header_score, numeric_ratio)
+        header_row_idx = list(header_rows)
+
+        # collapse header rows into a single header (join cells with space)
+        df, header = self._collapse_header(df, header_row_idx)
+
+        # split points: reappearing headers or large vertical gaps
+        row_positions = self._row_positions(cells)  # top->bottom positions
+        gaps = self._row_gaps(row_positions)
+
+        split_points = set()
+        # reheader: rows that look like header again later
+        reheader_idx = self._detect_reheader_rows(df, numeric_ratio, nonempty_ratio, header)
+        split_points.update(reheader_idx)
+
+        # large gaps
+        if len(gaps) > 0:
+            median_gap = float(np.median(gaps))
+            for i, g in enumerate(gaps):
+                if g > median_gap * self.gap_multiplier:
+                    split_points.add(i + 1)  # split starts at next row
+
+        # always ensure we start after header block
+        start_row = max(header_row_idx[-1] + 1, 0) if header_row_idx else 0
+        split_points = sorted([i for i in split_points if i >= start_row])
+
+        chunks = self._slice_chunks(df, start_row, split_points)
+
+        # build PdfElements per chunk with recomputed bbox
+        results: list[PdfElement] = []
+        for chunk in chunks:
+            if chunk.empty:
+                continue
+            bbox = self._bbox_for_rows(cells, set(chunk.index))
+            # preserve meta but record lineage
+            meta = dict(elem.meta)
+            meta["split_from"] = meta.get("id", meta.get("split_from"))
+            meta["header"] = header  # keep resolved header for downstream
+            rows = [header] + chunk.values.tolist() if header else chunk.values.tolist()
+
+            sub = replace(
+                elem,
+                rows=rows,
+                bbox=list(bbox),
+                meta=meta,
+            )
+            results.append(sub)
+
+        return results or [elem]
+
+    @staticmethod
+    def _normalize_df(df: pd.DataFrame) -> pd.DataFrame:
+        def norm(x: Any) -> str:
+            if x is None or (isinstance(x, float) and np.isnan(x)):
+                return ""
+            s = str(x).replace("\r", " ").replace("\n", " ").strip()
+            return re.sub(r"\s{2,}", " ", s)
+
+        # Pylance-safe: map per column
+        return df.apply(lambda s: s.map(norm))
+
+    @staticmethod
+    def _is_nonempty(x: str) -> bool:
+        return bool(x and x.strip())
+
+    @staticmethod
+    def _is_numeric_like(x: str) -> bool:
+        if not x or not x.strip():
+            return False
+        return bool(_NUMERIC_RE.match(x))
+
+    @staticmethod
+    def _has_header_tokens(x: str) -> bool:
+        if not x:
+            return False
+        return bool(_HEADER_TOKEN_HINTS.search(x))
+
+    def _detect_header_block(
+        self,
+        df: pd.DataFrame,
+        header_score: np.ndarray,
+        numeric_ratio: np.ndarray,
+    ) -> Iterable[int]:
+        """
+        Heuristic:
+          - scan from top while header_score is high and numeric_ratio is low
+          - require at least `min_cols_for_header` non-empty cells in a row
+          - stop once we hit a clearly data-like row (numeric_ratio >= ~0.5)
+        """
+        rows: list[int] = []
+        for i in range(len(df)):
+            row = df.iloc[i]
+            nonempty_cols = int(row.apply(self._is_nonempty).sum())
+            if nonempty_cols < self.min_cols_for_header:
+                # allow title/preamble lines to be part of header block if followed by header-ish lines
+                if rows:
+                    rows.append(i)
+                else:
+                    continue
+            else:
+                if numeric_ratio[i] <= self.numeric_ratio_header_max or header_score[i] >= 0.6:
+                    rows.append(i)
+                else:
+                    break
+
+        # trim trailing fully empty rows
+        while rows and not df.iloc[rows[-1]].apply(self._is_nonempty).any():
+            rows.pop()
+
+        return rows
+
+    @staticmethod
+    def _collapse_header(df: pd.DataFrame, header_rows: List[int]) -> tuple[pd.DataFrame, list[str] | None]:
+        if not header_rows:
+            return df, None
+        header_df = df.iloc[header_rows, :]
+        # join vertical header fragments per column
+        header = [
+            " ".join([str(v) for v in header_df[col].tolist() if v and str(v).strip()])
+            .strip()
+            for col in header_df.columns
+        ]
+        # drop header rows from df body
+        mask = np.ones(len(df), dtype=bool)
+        mask[header_rows] = False
+        body = df.iloc[mask, :]
+        return body, header
+
+    @staticmethod
+    def _row_positions(cells: list[Any]) -> list[float]:
+        """
+        Compute row baselines (average of y1 for each row index).
+        Camelot's cell has attributes: row, col, x1, y1, x2, y2 (top-left is (x1, y2)).
+        """
+        rows: Dict[int, list[float]] = {}
+        for c in cells:
+            rows.setdefault(c.row, []).append(c.y1)  # using y1 (lower y) is consistent for gaps
+        # rows are 0..N-1; map to average y
+        return [float(np.mean(rows[i])) for i in sorted(rows.keys())]
+
+    @staticmethod
+    def _row_gaps(row_positions: list[float]) -> list[float]:
+        # gaps between consecutive rows (positive if well-separated vertically)
+        if len(row_positions) <= 1:
+            return []
+        return [abs(row_positions[i] - row_positions[i + 1]) for i in range(len(row_positions) - 1)]
+
+    def _detect_reheader_rows(
+        self,
+        df: pd.DataFrame,
+        numeric_ratio: np.ndarray,
+        nonempty_ratio: np.ndarray,
+        header: list[str] | None,
+    ) -> List[int]:
+        """
+        Identify rows later in the table that look like a header line, used to split.
+        We’re conservative: low numeric ratio, decent non-empty coverage, and optionally
+        shares tokens with the resolved header.
+        """
+        if len(df) == 0:
+            return []
+
+        header_tokens = set()
+        if header:
+            for h in header:
+                header_tokens.update(self._tokenize(h))
+
+        idxs: list[int] = []
+        for i in range(len(df)):
+            # skip rows that are too numeric to be header
+            if numeric_ratio[i] > self.reheader_allow_numeric_ratio_max:
+                continue
+            if nonempty_ratio[i] < 0.4:
+                continue
+
+            if header_tokens:
+                row_tokens = set()
+                for v in df.iloc[i].tolist():
+                    row_tokens.update(self._tokenize(v))
+                # modest overlap is enough
+                if self._jaccard(row_tokens, header_tokens) >= 0.2:
+                    idxs.append(i)
+                else:
+                    # still allow explicit header hints
+                    if df.iloc[i].apply(self._has_header_tokens).any():
+                        idxs.append(i)
+            else:
+                if df.iloc[i].apply(self._has_header_tokens).any():
+                    idxs.append(i)
+        # de-duplicate consecutive indices
+        dedup: list[int] = []
+        for i in idxs:
+            if not dedup or i != dedup[-1] + 1:
+                dedup.append(i)
+        return dedup
+
+    @staticmethod
+    def _slice_chunks(df: pd.DataFrame, start_row: int, split_points: List[int]) -> List[pd.DataFrame]:
+        stops = list(split_points) + [len(df)]
+        chunks: list[pd.DataFrame] = []
+        cur = start_row
+        for s in stops:
+            if s <= cur:
+                continue
+            chunks.append(df.iloc[cur:s, :])
+            cur = s
+        return chunks
+
+    @staticmethod
+    def _bbox_for_rows(cells: list[Any], row_indices: set[int]) -> Tuple[float, float, float, float]:
+        sel = [c for c in cells if c.row in row_indices]
+        if not sel:
+            # fallback to everything
+            sel = cells
+        x0 = min(c.x1 for c in sel)
+        y0 = min(c.y1 for c in sel)
+        x1 = max(c.x2 for c in sel)
+        y1 = max(c.y2 for c in sel)
+        return (x0, y0, x1, y1)
+
+    @staticmethod
+    def _tokenize(s: str) -> List[str]:
+        if not s:
+            return []
+        return re.findall(r"[A-Za-z0-9%$]+", s.lower())
+
+    @staticmethod
+    def _jaccard(a: set[str], b: set[str]) -> float:
+        if not a or not b:
+            return 0.0
+        inter = len(a & b)
+        union = len(a | b)
+        return inter / union if union else 0.0
+
+
+
+================================================
+FILE: pdf_ninja/extractors/table/_tabula.py
+================================================
+from ...dataclasses import PdfContext
+from ...types import ElementsByPage
+
+class TabulaExtractor:
+        
+    def extract(self, ctx: PdfContext) -> ElementsByPage:
+        raise NotImplementedError("Tabular table extraction not yet implemented")
+        
+
+
+================================================
+FILE: pdf_ninja/extractors/table/extractor.py
+================================================
+import logging
+from .._base import BaseElementExtractor
+from ...dataclasses import PdfContext
+from ...types import ElementsByPage
+from ._camelot import CamelotExtractor
+from ._tabula import TabulaExtractor
+from ._postprocessor import TablePostprocessor
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+
+class TableExtractor(BaseElementExtractor):
+    
+    def __init__(self):
+        self._camelot_extractor = CamelotExtractor()
+        self._tabula_extractor = TabulaExtractor()
+        self._postprocessor = TablePostprocessor()
+
+    def extract(self, ctx: PdfContext) -> ElementsByPage:
+        try:
+            return self._extract(ctx)
+        except Exception as e:
+            raise
+        
+    def _extract(self, ctx: PdfContext) -> ElementsByPage:
+        results = self._camelot_extractor.extract(ctx)
+        postprocessed_results = self._postprocessor.process(results)
+        
+        return postprocessed_results
+
+
+================================================
+FILE: pdf_ninja/extractors/text/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: pdf_ninja/extractors/text/extractor.py
+================================================
+from .._base import BaseElementExtractor
+from ...dataclasses import PdfContext, PdfElement
+from ...types import ElementsByPage
+from pdfplumber.page import Page
+from typing import Any
+
+
+class TextExtractor(BaseElementExtractor):
+
+    def __init__(self, min_font_size: float = 0.0):
+        self.min_font_size = min_font_size
+
+    def extract(self, ctx: PdfContext) -> ElementsByPage:
+        if ctx.pdf_plumber is None:
+            return {}
+
+        results: ElementsByPage = {}
+
+        for i, page in enumerate(ctx.pdf_plumber.pages, start=1):
+            elements = self._extract_page_text(page, page_number=i)
+            if elements:
+                results[i] = elements
+
+        return results
+
+    def _extract_page_text(self, page: Page, page_number: int) -> list[PdfElement]:
+        words = page.extract_words(x_tolerance=2, y_tolerance=4)
+        if not words:
+            return []
+
+        words.sort(key=lambda w: (w["top"], w["x0"]))
+
+        line_groups = self._group_words_into_lines(words, y_tolerance=4.0)
+
+        line_elements: list[PdfElement] = []
+        for line_words in line_groups:
+            text = " ".join(w["text"].strip() for w in line_words if w.get("text"))
+            if not text:
+                continue
+
+            font_size = line_words[0].get("size")
+            if font_size and font_size < self.min_font_size:
+                continue
+
+            x0 = min(w["x0"] for w in line_words)
+            x1 = max(w["x1"] for w in line_words)
+            top = min(w["top"] for w in line_words)
+            bottom = max(w["bottom"] for w in line_words)
+            bbox = [x0, top, x1, bottom]
+
+            line_elements.append(
+                PdfElement(
+                    type="text",
+                    page=page_number,
+                    content=text,
+                    bbox=bbox,
+                    font_size=font_size,
+                    font_name=line_words[0].get("fontname"),
+                    meta={"source": "pdfplumber"},
+                )
+            )
+
+        block_elements = self._group_lines_into_blocks(line_elements, y_gap=8.0)
+
+        return block_elements
+
+    def _group_words_into_lines(
+        self, words: list[dict[str, Any]], y_tolerance: float = 3.0
+    ) -> list[list[dict[str, Any]]]:
+        """Group words that share similar vertical 'top' coordinate."""
+        if not words:
+            return []
+
+        lines: list[list[dict[str, Any]]] = []
+        current_line: list[dict[str, Any]] = []
+        current_y: float | None = None
+
+        for w in words:
+            if current_y is None:
+                current_y = w["top"]
+                current_line = [w]
+                continue
+
+            if abs(w["top"] - current_y) <= y_tolerance:
+                current_line.append(w)
+            else:
+                lines.append(current_line)
+                current_line = [w]
+                current_y = w["top"]
+
+        if current_line:
+            lines.append(current_line)
+
+        return lines
+
+    # ------------------------------------------------------------------
+
+    def _group_lines_into_blocks(
+        self, lines: list[PdfElement], y_gap: float = 8.0
+    ) -> list[PdfElement]:
+        """
+        Merge consecutive line elements into paragraph-like text blocks
+        if they are close vertically and share similar style.
+        """
+        if not lines:
+            return []
+
+        blocks: list[list[PdfElement]] = []
+        current_block: list[PdfElement] = [lines[0]]
+
+        for prev, curr in zip(lines, lines[1:]):
+            if not (prev.bbox and curr.bbox):
+                continue
+
+            vertical_gap = curr.bbox[1] - prev.bbox[3]
+            same_style = (
+                prev.font_name == curr.font_name
+                and abs((prev.font_size or 0) - (curr.font_size or 0)) < 0.5
+            )
+
+            # If lines are close and same style → same block
+            if vertical_gap <= y_gap and same_style:
+                current_block.append(curr)
+            else:
+                blocks.append(current_block)
+                current_block = [curr]
+
+        if current_block:
+            blocks.append(current_block)
+
+        # Merge grouped lines into new block elements
+        merged_blocks: list[PdfElement] = []
+        for group in blocks:
+            merged_blocks.append(self._merge_block(group))
+
+        return merged_blocks
+
+    def _merge_block(self, lines: list[PdfElement]) -> PdfElement:
+        """Combine multiple line elements into one text block element."""
+        text = " ".join(l.content.strip() for l in lines if l.content)
+        x0 = min(l.bbox[0] for l in lines if l.bbox)
+        x1 = max(l.bbox[2] for l in lines if l.bbox)
+        y0 = min(l.bbox[1] for l in lines if l.bbox)
+        y1 = max(l.bbox[3] for l in lines if l.bbox)
+
+        base = lines[0]
+        return PdfElement(
+            type="text",
+            page=base.page,
+            content=text,
+            bbox=[x0, y0, x1, y1],
+            font_size=base.font_size,
+            font_name=base.font_name,
+            meta={**base.meta, "merged_lines": len(lines)},
+        )
+
+
+
+================================================
+FILE: pdf_ninja/integrations/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: pdf_ninja/integrations/llama_index.py
+================================================
+from pathlib import Path
+from pdf_ninja import PdfNinja
+import logging
+try:
+    from llama_index.core import Document # type: ignore
+    from llama_index.core.readers.base import BaseReader # type: ignore
+except ImportError as e:
+    raise ImportError(
+        "PdfNinjaReader requires `llama-index` to be installed. "
+        "Install with: pip install pdf-ninja[llamaindex]"
+    ) from e
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+class PdfNinjaReader(BaseReader):
+    """Custom reader that uses PdfNinja to extract text and metadata from PDFs."""
+
+    def __init__(self, input_dir: Path):
+        self.input_dir = Path(input_dir)
+
+    def load_data(self) -> list[Document]:
+        docs: list[Document] = []
+
+        for pdf_path in self.input_dir.rglob("*.pdf"):
+            try:
+                parsed = PdfNinja().parse(pdf_path)
+                text = parsed.stringify()
+                if not text.strip():
+                    continue
+
+                metadata = {
+                    "file_path": str(pdf_path),
+                    "file_name": pdf_path.name,
+                    "page_count": len(parsed.pages),
+                }
+
+                docs.append(Document(text=text, metadata=metadata))
+
+            except Exception as e:
+                logger.error(f"Failed to parse {pdf_path}: {e}")
+
+        return docs
+

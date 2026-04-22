@@ -1,0 +1,1727 @@
+Directory structure:
+└── simonw-s3-ocr/
+    ├── README.md
+    ├── LICENSE
+    ├── setup.py
+    ├── s3_ocr/
+    │   ├── __init__.py
+    │   ├── __main__.py
+    │   └── cli.py
+    ├── tests/
+    │   ├── conftest.py
+    │   └── test_s3_ocr.py
+    └── .github/
+        └── workflows/
+            ├── publish.yml
+            └── test.yml
+
+================================================
+FILE: README.md
+================================================
+# s3-ocr
+
+[![PyPI](https://img.shields.io/pypi/v/s3-ocr.svg)](https://pypi.org/project/s3-ocr/)
+[![Changelog](https://img.shields.io/github/v/release/simonw/s3-ocr?include_prereleases&label=changelog)](https://github.com/simonw/s3-ocr/releases)
+[![Tests](https://github.com/simonw/s3-ocr/workflows/Test/badge.svg)](https://github.com/simonw/s3-ocr/actions?query=workflow%3ATest)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/simonw/s3-ocr/blob/master/LICENSE)
+
+Tools for running OCR against files stored in S3
+
+Background on this project: [s3-ocr: Extract text from PDF files stored in an S3 bucket](https://simonwillison.net/2022/Jun/30/s3-ocr/)
+
+## Installation
+
+Install this tool using `pip`:
+
+    pip install s3-ocr
+
+## Demo
+
+You can see the results of running this tool against three PDFs from the Internet Archive ([one](https://archive.org/details/unmaskingrobert00houdgoog), [two](https://archive.org/details/practicalmagicia00harr), [three](https://archive.org/details/latestmagicbeing00hoff)) in [this example table](https://s3-ocr-demo.datasette.io/pages/pages?_facet=path#facet-path) hosted using [Datasette](https://datasette.io/).
+
+## Starting OCR against PDFs in a bucket
+
+The `start` command takes a list of keys and submits them to [Textract](https://aws.amazon.com/textract/) for OCR processing.
+
+You need to have AWS configured using environment variables, credentials file in your home directory or a JSON or INI file generated using [s3-credentials](https://datasette.io/tools/s3-credentials).
+
+You can start the process running like this:
+
+    s3-ocr start name-of-your-bucket my-pdf-file.pdf
+
+The paths you specify should be paths within the bucket. If you stored your PDF files in folders inside the bucket it should look like this:
+
+    s3-ocr start name-of-your-bucket path/to/one.pdf path/to/two.pdf
+
+OCR can take some time. The results of the OCR will be stored in `textract-output` in your bucket.
+
+To process every file in the bucket with a `.pdf` extension use `--all`:
+
+    s3-ocr start name-of-bucket --all
+
+To process every file with a `.pdf` extension within a specific folder, use `--prefix`:
+
+    s3-ocr start name-of-bucket --prefix path/to/folder
+
+### s3-ocr start --help
+
+<!-- [[[cog
+import cog
+from s3_ocr import cli
+from click.testing import CliRunner
+runner = CliRunner()
+result = runner.invoke(cli.cli, ["start", "--help"])
+help = result.output.replace("Usage: cli", "Usage: s3-ocr")
+cog.out(
+    "```\n{}\n```".format(help)
+)
+]]] -->
+```
+Usage: s3-ocr start [OPTIONS] BUCKET [KEYS]...
+
+  Start OCR tasks for PDF files in an S3 bucket
+
+      s3-ocr start name-of-bucket path/to/one.pdf path/to/two.pdf
+
+  To process every file with a .pdf extension:
+
+      s3-ocr start name-of-bucket --all
+
+  To process every .pdf in the PUBLIC/ folder:
+
+      s3-ocr start name-of-bucket --prefix PUBLIC/
+
+Options:
+  --all                 Process all PDF files in the bucket
+  --prefix TEXT         Process all PDF files within this prefix
+  --dry-run             Show what this would do, but don't actually do it
+  --no-retry            Don't retry failed requests
+  --access-key TEXT     AWS access key ID
+  --secret-key TEXT     AWS secret access key
+  --session-token TEXT  AWS session token
+  --endpoint-url TEXT   Custom endpoint URL
+  -a, --auth FILENAME   Path to JSON/INI file containing credentials
+  --help                Show this message and exit.
+
+```
+<!-- [[[end]]] -->
+
+## Checking status
+
+The `s3-ocr status <bucket-name>` command shows a rough indication of progress through the tasks:
+
+```
+% s3-ocr status sfms-history
+153 complete out of 532 jobs
+```
+It compares the jobs that have been submitted, based on `.s3-ocr.json` files, to the jobs that have their results written to the `textract-output/` folder.
+
+### s3-ocr status --help
+
+<!-- [[[cog
+result = runner.invoke(cli.cli, ["status", "--help"])
+help = result.output.replace("Usage: cli", "Usage: s3-ocr")
+cog.out(
+    "```\n{}\n```".format(help.split("--access-key")[0] + "--access-key ...")
+)
+]]] -->
+```
+Usage: s3-ocr status [OPTIONS] BUCKET
+
+  Show status of OCR jobs for a bucket
+
+Options:
+  --access-key ...
+```
+<!-- [[[end]]] -->
+
+## Inspecting a job
+
+The `s3-ocr inspect-job <job_id>` command can be used to check the status of a specific job ID:
+```
+% s3-ocr inspect-job b267282745685226339b7e0d4366c4ff6887b7e293ed4b304dc8bb8b991c7864
+{
+  "DocumentMetadata": {
+    "Pages": 583
+  },
+  "JobStatus": "SUCCEEDED",
+  "DetectDocumentTextModelVersion": "1.0"
+}
+```
+
+### s3-ocr inspect-job --help
+
+<!-- [[[cog
+result = runner.invoke(cli.cli, ["inspect-job", "--help"])
+help = result.output.replace("Usage: cli", "Usage: s3-ocr")
+cog.out(
+    "```\n{}\n```".format(help.split("--access-key")[0] + "--access-key ...")
+)
+]]] -->
+```
+Usage: s3-ocr inspect-job [OPTIONS] JOB_ID
+
+  Show the current status of an OCR job
+
+      s3-ocr inspect-job <job_id>
+
+Options:
+  --access-key ...
+```
+<!-- [[[end]]] -->
+
+## Fetching the results
+
+Once an OCR job has completed you can download the resulting JSON using the `fetch` command:
+
+    s3-ocr fetch name-of-bucket path/to/file.pdf
+
+This will save files in the current directory with names like this:
+
+- `4d9b5cf580e761fdb16fd24edce14737ebc562972526ef6617554adfa11d6038-1.json`
+- `4d9b5cf580e761fdb16fd24edce14737ebc562972526ef6617554adfa11d6038-2.json`
+
+The number of files will vary depending on the length of the document.
+
+If you don't want separate files you can combine them together using the `-c/--combine` option:
+
+    s3-ocr fetch name-of-bucket path/to/file.pdf --combine output.json
+
+The `output.json` file will then contain data that looks something like this:
+
+```
+{
+  "Blocks": [
+    {
+      "BlockType": "PAGE",
+      "Geometry": {...}
+      "Page": 1,
+      ...
+    },
+    {
+      "BlockType": "LINE",
+      "Page": 1,
+      ...
+      "Text": "Barry",
+    },
+```
+### s3-ocr fetch --help
+
+<!-- [[[cog
+result = runner.invoke(cli.cli, ["fetch", "--help"])
+help = result.output.replace("Usage: cli", "Usage: s3-ocr")
+cog.out(
+    "```\n{}\n```".format(help.split("--access-key")[0] + "--access-key ...")
+)
+]]] -->
+```
+Usage: s3-ocr fetch [OPTIONS] BUCKET KEY
+
+  Fetch the OCR results for a specified file
+
+      s3-ocr fetch name-of-bucket path/to/key.pdf
+
+  This will save files in the current directory called things like
+
+      a806e67e504fc15f...48314e-1.json     a806e67e504fc15f...48314e-2.json
+
+  To combine these together into a single JSON file with a specified name, use:
+
+      s3-ocr fetch name-of-bucket path/to/key.pdf --combine output.json
+
+  Use "--output -" to print the combined JSON to standard output instead.
+
+Options:
+  -c, --combine FILENAME  Write combined JSON to file
+  --access-key ...
+```
+<!-- [[[end]]] -->
+
+## Fetching just the text of a page
+
+If you don't want to deal with the JSON directly, you can use the `text` command to retrieve just the text extracted from a PDF:
+
+    s3-ocr text name-of-bucket path/to/file.pdf
+
+This will output plain text to standard output.
+
+To save that to a file, use this:
+
+    s3-ocr text name-of-bucket path/to/file.pdf > text.txt
+
+Separate pages will be separated by three newlines. To separate them using a `----` horizontal divider instead add `--divider`:
+
+    s3-ocr text name-of-bucket path/to/file.pdf --divider
+
+### s3-ocr text --help
+
+<!-- [[[cog
+result = runner.invoke(cli.cli, ["text", "--help"])
+help = result.output.replace("Usage: cli", "Usage: s3-ocr")
+cog.out(
+    "```\n{}\n```".format(help.split("--access-key")[0] + "--access-key ...")
+)
+]]] -->
+```
+Usage: s3-ocr text [OPTIONS] BUCKET KEY
+
+  Retrieve the text from an OCRd PDF file
+
+      s3-ocr text name-of-bucket path/to/key.pdf
+
+Options:
+  --divider             Add ---- between pages
+  --access-key ...
+```
+<!-- [[[end]]] -->
+
+## Avoiding processing duplicates
+
+If you move files around within your S3 bucket `s3-ocr` can lose track of which files have already been processed. This can lead to additional Textract charges for processing should you run `s3-ocr start` against those new files.
+
+The `s3-ocr dedupe` command addresses this by scanning your bucket for files that have a new name but have previously been processed. It does this by looking at the `ETag` for each file, which represents the MD5 hash of the file contents.
+
+The command will write out new `.s3ocr.json` files for each detected duplicate. This will avoid those duplicates being run those duplicates through OCR a second time should yo run `s3-ocr start`.
+
+    s3-ocr dedupe name-of-bucket
+
+Add `--dry-run` for a preview of the changes that will be made to your bucket.
+
+### s3-ocr dedupe --help
+
+<!-- [[[cog
+result = runner.invoke(cli.cli, ["dedupe", "--help"])
+help = result.output.replace("Usage: cli", "Usage: s3-ocr")
+cog.out(
+    "```\n{}\n```".format(help.split("--access-key")[0] + "--access-key ...")
+)
+]]] -->
+```
+Usage: s3-ocr dedupe [OPTIONS] BUCKET
+
+  Scan every file in the bucket checking for duplicates - files that have not
+  yet been OCRd but that have the same contents (based on ETag) as a file that
+  HAS been OCRd.
+
+      s3-ocr dedupe name-of-bucket
+
+Options:
+  --dry-run             Show output without writing anything to S3
+  --access-key ...
+```
+<!-- [[[end]]] -->
+
+## Changes made to your bucket
+
+To keep track of which files have been submitted for processing, `s3-ocr` will create a JSON file for every file that it adds to the OCR queue.
+
+This file will be called:
+
+    path-to-file/name-of-file.pdf.s3-ocr.json
+
+Each of these JSON files contains data that looks like this:
+
+```json
+{
+  "job_id": "a34eb4e8dc7e70aa9668f7272aa403e85997364199a654422340bc5ada43affe",
+  "etag": "\"b0c77472e15500347ebf46032a454e8e\""
+}
+```
+The recorded `job_id` can be used later to associate the file with the results of the OCR task in `textract-output/`.
+
+The `etag` is the ETag of the S3 object at the time it was submitted. This can be used later to determine if a file has changed since it last had OCR run against it.
+
+This design for the tool, with the `.s3-ocr.json` files tracking jobs that have been submitted, means that it is safe to run `s3-ocr start` against the same bucket multiple times without the risk of starting duplicate OCR jobs.
+
+## Creating a SQLite index of your OCR results
+
+The `s3-ocr index <bucket> <database_file>` command creates a SQLite database containing the results of the OCR, and configures SQLite full-text search against the text:
+
+```
+% s3-ocr index sfms-history index.db
+Fetching job details  [####################################]  100%
+Populating pages table  [####################----------------]   55%  00:03:18
+```
+The schema of the resulting database looks like this (excluding the FTS tables):
+```sql
+CREATE TABLE [pages] (
+   [path] TEXT,
+   [page] INTEGER,
+   [folder] TEXT,
+   [text] TEXT,
+   PRIMARY KEY ([path], [page])
+);
+CREATE TABLE [ocr_jobs] (
+   [key] TEXT PRIMARY KEY,
+   [job_id] TEXT,
+   [etag] TEXT,
+   [s3_ocr_etag] TEXT
+);
+CREATE TABLE [fetched_jobs] (
+   [job_id] TEXT PRIMARY KEY
+);
+```
+The database is designed to be used with [Datasette](https://datasette.io).
+
+### s3-ocr index --help
+
+<!-- [[[cog
+result = runner.invoke(cli.cli, ["index", "--help"])
+help = result.output.replace("Usage: cli", "Usage: s3-ocr")
+cog.out(
+    "```\n{}\n```".format(help.split("--access-key")[0] + "--access-key ...")
+)
+]]] -->
+```
+Usage: s3-ocr index [OPTIONS] BUCKET DATABASE
+
+  Create a SQLite database with OCR results for files in a bucket
+
+Options:
+  --access-key ...
+```
+<!-- [[[end]]] -->
+
+## Development
+
+To contribute to this tool, first checkout the code. Then create a new virtual environment:
+
+    cd s3-ocr
+    python -m venv venv
+    source venv/bin/activate
+
+Now install the dependencies and test dependencies:
+
+    pip install -e '.[test]'
+
+To run the tests:
+
+    pytest
+
+To regenerate the README file with the latest `--help`:
+
+    cog -r README.md
+
+
+
+================================================
+FILE: LICENSE
+================================================
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+
+
+================================================
+FILE: setup.py
+================================================
+from setuptools import setup
+import os
+
+VERSION = "0.6.3"
+
+
+def get_long_description():
+    with open(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "README.md"),
+        encoding="utf8",
+    ) as fp:
+        return fp.read()
+
+
+setup(
+    name="s3-ocr",
+    description="Tools for running OCR against files stored in S3",
+    long_description=get_long_description(),
+    long_description_content_type="text/markdown",
+    author="Simon Willison",
+    url="https://github.com/simonw/s3-ocr",
+    project_urls={
+        "Issues": "https://github.com/simonw/s3-ocr/issues",
+        "CI": "https://github.com/simonw/s3-ocr/actions",
+        "Changelog": "https://github.com/simonw/s3-ocr/releases",
+    },
+    license="Apache License, Version 2.0",
+    version=VERSION,
+    packages=["s3_ocr"],
+    entry_points="""
+        [console_scripts]
+        s3-ocr=s3_ocr.cli:cli
+    """,
+    install_requires=["click>=8.0", "boto3", "sqlite-utils"],
+    extras_require={"test": ["pytest", "moto[s3,textract]", "cogapp", "pytest-mock"]},
+    python_requires=">=3.7",
+)
+
+
+
+================================================
+FILE: s3_ocr/__init__.py
+================================================
+[Empty file]
+
+
+================================================
+FILE: s3_ocr/__main__.py
+================================================
+from .cli import cli
+
+if __name__ == "__main__":
+    cli()
+
+
+
+================================================
+FILE: s3_ocr/cli.py
+================================================
+import click
+import configparser
+import boto3
+import io
+import json
+import sqlite_utils
+import time
+
+S3_OCR_JSON = ".s3-ocr.json"
+
+
+def strip_ocr_json(key):
+    assert key.endswith(S3_OCR_JSON)
+    return key[: -len(S3_OCR_JSON)]
+
+
+def common_boto3_options(fn):
+    for decorator in reversed(
+        (
+            click.option(
+                "--access-key",
+                help="AWS access key ID",
+            ),
+            click.option(
+                "--secret-key",
+                help="AWS secret access key",
+            ),
+            click.option(
+                "--session-token",
+                help="AWS session token",
+            ),
+            click.option(
+                "--endpoint-url",
+                help="Custom endpoint URL",
+            ),
+            click.option(
+                "-a",
+                "--auth",
+                type=click.File("r"),
+                help="Path to JSON/INI file containing credentials",
+            ),
+        )
+    ):
+        fn = decorator(fn)
+    return fn
+
+
+def make_client(
+    service, access_key, secret_key, session_token, endpoint_url, auth, region_name=None
+):
+    if auth:
+        if access_key or secret_key or session_token:
+            raise click.ClickException(
+                "--auth cannot be used with --access-key, --secret-key or --session-token"
+            )
+        auth_content = auth.read().strip()
+        if auth_content.startswith("{"):
+            # Treat as JSON
+            decoded = json.loads(auth_content)
+            access_key = decoded.get("AccessKeyId")
+            secret_key = decoded.get("SecretAccessKey")
+            session_token = decoded.get("SessionToken")
+        else:
+            # Treat as INI
+            config = configparser.ConfigParser()
+            config.read_string(auth_content)
+            # Use the first section that has an aws_access_key_id
+            for section in config.sections():
+                if "aws_access_key_id" in config[section]:
+                    access_key = config[section].get("aws_access_key_id")
+                    secret_key = config[section].get("aws_secret_access_key")
+                    session_token = config[section].get("aws_session_token")
+                    break
+    kwargs = {}
+    if access_key:
+        kwargs["aws_access_key_id"] = access_key
+    if secret_key:
+        kwargs["aws_secret_access_key"] = secret_key
+    if session_token:
+        kwargs["aws_session_token"] = session_token
+    if endpoint_url:
+        kwargs["endpoint_url"] = endpoint_url
+    if region_name:
+        kwargs["region_name"] = region_name
+    return boto3.client(service, **kwargs)
+
+
+@click.group()
+@click.version_option()
+def cli():
+    """
+    Tools for running OCR against files stored in S3
+
+    Docs: https://github.com/simonw/s3-ocr/blob/main/README.md
+
+    Changelog: https://github.com/simonw/s3-ocr/releases
+    """
+
+
+@cli.command()
+@click.argument("bucket")
+@click.argument("keys", nargs=-1)
+@click.option("--all", is_flag=True, help="Process all PDF files in the bucket")
+@click.option("--prefix", help="Process all PDF files within this prefix")
+@click.option(
+    "--dry-run", is_flag=True, help="Show what this would do, but don't actually do it"
+)
+@click.option("--no-retry", is_flag=True, help="Don't retry failed requests")
+@common_boto3_options
+def start(bucket, keys, all, prefix, dry_run, no_retry, **boto_options):
+    """
+    Start OCR tasks for PDF files in an S3 bucket
+
+        s3-ocr start name-of-bucket path/to/one.pdf path/to/two.pdf
+
+    To process every file with a .pdf extension:
+
+        s3-ocr start name-of-bucket --all
+
+    To process every .pdf in the PUBLIC/ folder:
+
+        s3-ocr start name-of-bucket --prefix PUBLIC/
+    """
+    s3 = make_client("s3", **boto_options)
+    bucket_region = s3.get_bucket_location(Bucket=bucket)["LocationConstraint"]
+    textract = make_client("textract", region_name=bucket_region, **boto_options)
+    if keys:
+        items = []
+        for key in keys:
+            matches = list(
+                paginate(s3, "list_objects_v2", "Contents", Bucket=bucket, Prefix=key)
+            )
+            # We only care about exact matches or matches with .s3-ocr.json
+            for match in matches:
+                if match["Key"] in (key, key + S3_OCR_JSON):
+                    items.append(match)
+    else:
+        if not all and not prefix:
+            raise click.ClickException(
+                "Specify keys, --prefix or use --all to process all PDFs in the bucket"
+            )
+        kwargs = dict(Bucket=bucket)
+        if prefix:
+            kwargs["Prefix"] = prefix
+        items = list(paginate(s3, "list_objects_v2", "Contents", **kwargs))
+    # Start any item that ends in .pdf for which a .s3-ocr.json file does not exist
+    keys_with_s3_ocr_files = [
+        strip_ocr_json(item["Key"])
+        for item in items
+        if item["Key"].endswith(S3_OCR_JSON)
+    ]
+    pdf_items = [item for item in items if item["Key"].endswith(".pdf")]
+    click.echo(
+        "Found {} files with {} out of {} PDFs".format(
+            len(keys_with_s3_ocr_files), S3_OCR_JSON, len(pdf_items)
+        )
+    )
+    if dry_run:
+        items = [
+            item for item in pdf_items if item["Key"] not in keys_with_s3_ocr_files
+        ]
+        click.echo("Would start {} tasks for these keys:".format(len(items)))
+        for item in items:
+            click.echo(item["Key"])
+        return
+    for item in pdf_items:
+        key = item["Key"]
+        if key not in keys_with_s3_ocr_files:
+            sleep = 1
+            while True:
+                try:
+                    response = start_document_text_extraction(
+                        textract,
+                        DocumentLocation={
+                            "S3Object": {
+                                "Bucket": bucket,
+                                "Name": key,
+                            }
+                        },
+                        OutputConfig={
+                            "S3Bucket": bucket,
+                            "S3Prefix": "textract-output",
+                        },
+                    )
+                    break
+                except textract.exceptions.LimitExceededException as ex:
+                    if no_retry:
+                        raise click.ClickException(str(ex))
+                    click.echo("{} - retrying...".format(str(ex)))
+                    time.sleep(sleep)
+                    if sleep < 8:
+                        sleep *= 2
+            job_id = response.get("JobId")
+            if job_id:
+                click.echo(f"Starting OCR for {key}, Job ID: {job_id}")
+                # Write a .s3-ocr.json file for this item
+                s3.put_object(
+                    Bucket=bucket,
+                    Key=f"{key}.s3-ocr.json",
+                    Body=json.dumps({"job_id": job_id, "etag": item["ETag"]}),
+                )
+            else:
+                click.echo(f"Failed to start OCR for {key}")
+                click.echo(response)
+
+
+@cli.command()
+@click.argument("bucket")
+@click.option(
+    "--dry-run", is_flag=True, help="Show output without writing anything to S3"
+)
+@common_boto3_options
+def dedupe(bucket, dry_run, **boto_options):
+    """
+    Scan every file in the bucket checking for duplicates - files that have
+    not yet been OCRd but that have the same contents (based on ETag) as a
+    file that HAS been OCRd.
+
+        s3-ocr dedupe name-of-bucket
+    """
+    s3 = make_client("s3", **boto_options)
+    click.echo("Scanning bucket {}".format(bucket), err=True)
+    items = list(paginate(s3, "list_objects_v2", "Contents", Bucket=bucket))
+    s3_ocr_to_fetch = [
+        (item["Key"], item["ETag"], strip_ocr_json(item["Key"]))
+        for item in items
+        if item["Key"].endswith(S3_OCR_JSON)
+    ]
+    keys_that_have_been_done = {s3_ocr[2] for s3_ocr in s3_ocr_to_fetch}
+
+    def _fetch():
+        for ocr_json_key, etag, key in s3_ocr_to_fetch:
+            response = s3.get_object(Bucket=bucket, Key=ocr_json_key)
+            data = json.loads(response["Body"].read())
+            yield {
+                "key": key,
+                "job_id": data["job_id"],
+                "etag": data["etag"],
+                "s3_ocr_etag": response["ETag"],
+            }
+
+    jobs_by_etag = {}
+    with click.progressbar(
+        _fetch(),
+        length=len(s3_ocr_to_fetch),
+        label="Fetching previous OCR jobs",
+        show_pos=True,
+    ) as rows:
+        for row in rows:
+            jobs_by_etag[row["etag"]] = row
+
+    # Check ETags of every file that has not been OCRd yet
+    not_yet_ocrd_keys = [
+        item
+        for item in items
+        if item["Key"].endswith(".pdf") and item["Key"] not in keys_that_have_been_done
+    ]
+
+    # Which of these are dupes?
+    dupes = {
+        item["Key"]: jobs_by_etag[item["ETag"]]
+        for item in not_yet_ocrd_keys
+        if item["ETag"] in jobs_by_etag
+    }
+
+    if dry_run:
+        click.echo("Would write results for the following dupes:")
+        click.echo(json.dumps(dupes, indent=2))
+    else:
+        with click.progressbar(
+            dupes.items(), label="Writing results for dupes", show_pos=True
+        ) as pairs:
+            for key, details in pairs:
+                body = {"job_id": details["job_id"], "etag": details["etag"]}
+                s3.put_object(
+                    Bucket=bucket,
+                    Key=f"{key}.s3-ocr.json",
+                    Body=json.dumps(body),
+                )
+
+
+@cli.command()
+@click.argument("bucket")
+@common_boto3_options
+def status(bucket, **boto_options):
+    "Show status of OCR jobs for a bucket"
+    s3 = make_client("s3", **boto_options)
+    items = list(paginate(s3, "list_objects_v2", "Contents", Bucket=bucket))
+    keys_with_s3_ocr_files = [
+        strip_ocr_json(item["Key"])
+        for item in items
+        if item["Key"].endswith(S3_OCR_JSON)
+    ]
+    completed_job_ids = {
+        item["Key"].split("textract-output/")[1].split("/")[0]
+        for item in items
+        if item["Key"].startswith("textract-output")
+    }
+    click.echo(
+        "{} complete out of {} jobs".format(
+            len(completed_job_ids), len(keys_with_s3_ocr_files)
+        )
+    )
+
+
+@cli.command()
+@click.argument("job_id")
+@common_boto3_options
+def inspect_job(job_id, **boto_options):
+    """
+    Show the current status of an OCR job
+
+        s3-ocr inspect-job <job_id>
+    """
+    textract = make_client("textract", **boto_options)
+    try:
+        response = textract.get_document_text_detection(JobId=job_id)
+    except textract.exceptions.InvalidJobIdException:
+        raise click.ClickException("Invalid job ID")
+    for key in ("Blocks", "ResponseMetadata", "NextToken"):
+        response.pop(key, None)
+    click.echo(json.dumps(response, indent=2))
+
+
+@cli.command()
+@click.argument("bucket")
+@click.argument("key")
+@click.option(
+    "-c", "--combine", type=click.File("w"), help="Write combined JSON to file"
+)
+@common_boto3_options
+def fetch(bucket, key, combine, **boto_options):
+    """
+    Fetch the OCR results for a specified file
+
+        s3-ocr fetch name-of-bucket path/to/key.pdf
+
+    This will save files in the current directory called things like
+
+        a806e67e504fc15f...48314e-1.json
+        a806e67e504fc15f...48314e-2.json
+
+    To combine these together into a single JSON file with a specified
+    name, use:
+
+        s3-ocr fetch name-of-bucket path/to/key.pdf --combine output.json
+
+    Use "--output -" to print the combined JSON to standard output instead.
+    """
+    s3 = make_client("s3", **boto_options)
+
+    items = list(paginate(s3, "list_objects_v2", "Contents", Bucket=bucket, Prefix=key))
+    keys_with_s3_ocr_files = [
+        strip_ocr_json(item["Key"])
+        for item in items
+        if item["Key"].endswith(S3_OCR_JSON)
+    ]
+    if not keys_with_s3_ocr_files:
+        raise click.ClickException("Key could not be found in bucket: {}".format(key))
+    # Read that file to find the job ID
+    try:
+        job_id = json.loads(
+            s3.get_object(Bucket=bucket, Key=keys_with_s3_ocr_files[0] + S3_OCR_JSON)[
+                "Body"
+            ].read()
+        )["job_id"]
+    except Exception as e:
+        raise click.ClickException("Could not find job_id for key")
+    result_items = [
+        item
+        for item in paginate(
+            s3,
+            "list_objects_v2",
+            "Contents",
+            Bucket=bucket,
+            Prefix="textract-output/{}".format(job_id),
+        )
+        if ".s3_access_check" not in item["Key"]
+    ]
+    if not combine:
+        for item in result_items:
+            filename = (
+                item["Key"].replace("textract-output/", "").replace("/", "-") + ".json"
+            )
+            s3.download_file(bucket, item["Key"], filename)
+    else:
+        combined = []
+        for item in result_items:
+            blocks = json.loads(
+                s3.get_object(Bucket=bucket, Key=item["Key"])["Body"].read()
+            )["Blocks"]
+            combined.extend(blocks)
+        combine.write(json.dumps({"Blocks": combined}))
+
+
+@cli.command()
+@click.argument("bucket")
+@click.argument("key")
+@click.option("--divider", is_flag=True, help="Add ---- between pages")
+@common_boto3_options
+def text(bucket, key, divider, **boto_options):
+    """
+    Retrieve the text from an OCRd PDF file
+
+        s3-ocr text name-of-bucket path/to/key.pdf
+    """
+    output = io.StringIO()
+    fetch.callback(bucket, key, combine=output, **boto_options)
+    output.seek(0)
+    blocks = json.loads(output.getvalue())["Blocks"]
+    current_page = None
+    for block in blocks:
+        if block["BlockType"] == "LINE":
+            page = block["Page"]
+            if current_page is not None:
+                if page != current_page:
+                    if divider:
+                        click.echo("\n----\n")
+                    else:
+                        click.echo("\n")
+            current_page = page
+            click.echo(block["Text"])
+
+
+@cli.command()
+@click.argument("bucket")
+@click.argument(
+    "database",
+    type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
+    required=True,
+)
+@common_boto3_options
+def index(bucket, database, **boto_options):
+    "Create a SQLite database with OCR results for files in a bucket"
+    db = sqlite_utils.Database(database)
+    if not db["pages"].exists():
+        db["pages"].create(
+            {"path": str, "page": int, "folder": str, "text": str}, pk=("path", "page")
+        )
+        db["pages"].enable_fts(["text"], create_triggers=True)
+    s3 = make_client("s3", **boto_options)
+    items = list(paginate(s3, "list_objects_v2", "Contents", Bucket=bucket))
+    # We don't need to fetch files that already exist in our ocr_jobs table
+    # and have the expected ETag
+    existing_ocr_jobs = set()
+    if db["ocr_jobs"].exists():
+        existing_ocr_jobs = {
+            (row["key"], row["s3_ocr_etag"])
+            for row in db.query("SELECT key, s3_ocr_etag FROM ocr_jobs")
+        }
+    to_fetch = [
+        item
+        for item in items
+        if item["Key"].endswith(S3_OCR_JSON)
+        and (strip_ocr_json(item["Key"]), item["ETag"]) not in existing_ocr_jobs
+    ]
+    # Now fetch those missing records
+    def _fetch():
+        for item in to_fetch:
+            key = item["Key"]
+            response = s3.get_object(Bucket=bucket, Key=key)
+            data = json.loads(response["Body"].read())
+            yield {
+                "key": strip_ocr_json(key),
+                "job_id": data["job_id"],
+                "etag": data["etag"],
+                "s3_ocr_etag": response["ETag"],
+            }
+
+    with click.progressbar(
+        _fetch(), length=len(to_fetch), label="Fetching job details"
+    ) as rows:
+        db["ocr_jobs"].insert_all(rows, pk="key", replace=True)
+
+    # Now we can fetch any missing textract-output/<job_id>/<page> files
+    available_job_ids = {
+        item["Key"].split("textract-output/")[1].split("/")[0]
+        for item in items
+        if item["Key"].startswith("textract-output")
+    }
+    job_ids_in_ocr_jobs = set()
+    if db["ocr_jobs"].exists():
+        job_ids_in_ocr_jobs = {
+            r["job_id"] for r in db.query("SELECT job_id FROM ocr_jobs")
+        }
+    # Just fetch the ones that are not yet recorded as fetched in our database
+    # AND that are referenced from the ocr_jobs table
+    fetched_job_ids = set()
+    if db["fetched_jobs"].exists():
+        fetched_job_ids = {
+            r["job_id"] for r in db.query("SELECT job_id FROM fetched_jobs")
+        }
+    to_fetch_job_ids = list(
+        job_ids_in_ocr_jobs.intersection(available_job_ids - fetched_job_ids)
+    )
+    # Figure out total length to retrieve in bytes, for the progress bar
+    items_to_fetch = []
+    for item in items:
+        if (
+            item["Key"].startswith("textract-output")
+            and item["Key"].split("/")[1] in to_fetch_job_ids
+            and ".s3_access_check" not in item["Key"]
+        ):
+            items_to_fetch.append(item)
+    total_length = sum(item["Size"] for item in items_to_fetch)
+    with click.progressbar(length=total_length, label="Populating pages table") as bar:
+        for item in items_to_fetch:
+            # Look up path based on job_id
+            bar.update(item["Size"])
+            job_id = item["Key"].split("textract-output/")[1].split("/")[0]
+            if db["ocr_jobs"].exists():
+                try:
+                    job_row = next(
+                        db.query("SELECT key FROM ocr_jobs WHERE job_id = ?", [job_id])
+                    )
+                except StopIteration:
+                    # This doesn't correspond to a job we know about
+                    click.echo("Missing job ID:", job_id, err=True)
+                    continue
+            path = job_row["key"]
+            blocks = json.loads(
+                s3.get_object(Bucket=bucket, Key=item["Key"])["Body"].read()
+            )["Blocks"]
+            # Just extract the line blocks
+            pages = {}
+            for block in blocks:
+                if block["BlockType"] == "LINE":
+                    page = block["Page"]
+                    if page not in pages:
+                        pages[page] = []
+                    pages[page].append(block["Text"])
+            # And insert those into the database
+            folder = "/".join(path.split("/")[:-1])
+            for page_number, lines in pages.items():
+                db["pages"].insert(
+                    {
+                        "path": path,
+                        "page": page_number,
+                        "folder": folder,
+                        "text": "\n".join(lines),
+                    },
+                    replace=True,
+                )
+            # Add a blank record for every page that is missing
+            all_page_numbers = [
+                block["Page"] for block in blocks if block["BlockType"] == "PAGE"
+            ]
+            missing = [pn for pn in all_page_numbers if pn not in pages.keys()]
+            for number in missing:
+                db["pages"].insert(
+                    {
+                        "path": path,
+                        "page": number,
+                        "folder": folder,
+                        "text": "",
+                    },
+                    replace=True,
+                )
+            db["fetched_jobs"].insert(
+                {
+                    "job_id": job_id,
+                },
+                replace=True,
+                pk="job_id",
+            )
+
+
+def paginate(service, method, list_key, **kwargs):
+    paginator = service.get_paginator(method)
+    for response in paginator.paginate(**kwargs):
+        yield from response.get(list_key) or []
+
+
+def start_document_text_extraction(textract, **kwargs):
+    # Wrapper function to make this easier to mock in tests
+    return textract.start_document_text_detection(**kwargs)
+
+
+
+================================================
+FILE: tests/conftest.py
+================================================
+import pytest
+import os
+from moto import mock_s3, mock_textract
+import boto3
+
+
+@pytest.fixture(scope="function")
+def aws_credentials():
+    """Mocked AWS Credentials for moto."""
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    os.environ["AWS_SESSION_TOKEN"] = "testing"
+    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+
+
+@pytest.fixture(scope="function")
+def s3(aws_credentials):
+    with mock_s3():
+        client = boto3.client("s3", region_name="us-east-1")
+        client.create_bucket(Bucket="my-bucket")
+        client.put_object(Bucket="my-bucket", Key="blah.pdf", Body=b"Fake PDF")
+        yield client
+
+
+@pytest.fixture(scope="function")
+def textract(aws_credentials):
+    with mock_textract():
+        yield
+
+
+
+================================================
+FILE: tests/test_s3_ocr.py
+================================================
+import boto3
+from click.testing import CliRunner
+from unittest.mock import ANY
+import sqlite_utils
+from s3_ocr.cli import cli
+import json
+import os
+import pytest
+import sqlite_utils
+
+
+def test_start_with_no_options_error(s3):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ["start", "my-bucket"])
+        assert result.exit_code == 1
+        assert (
+            "Specify keys, --prefix or use --all to process all PDFs in the bucket"
+            in result.output
+        )
+
+
+def test_start_all_creates_s3_ocr_json(s3, textract):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ["start", "my-bucket", "--all"])
+        assert result.exit_code == 0
+    assert_expected_contents_after_all(s3)
+
+
+def assert_expected_contents_after_all(s3):
+    bucket_contents = s3.list_objects_v2(Bucket="my-bucket")["Contents"]
+    assert {b["Key"] for b in bucket_contents} == {"blah.pdf", "blah.pdf.s3-ocr.json"}
+    content = s3.get_object(Bucket="my-bucket", Key="blah.pdf.s3-ocr.json")
+    decoded = json.loads(content["Body"].read())
+    assert set(decoded.keys()) == {"job_id", "etag"}
+
+
+def test_start_all_dry_run(s3):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ["start", "my-bucket", "--all", "--dry-run"])
+        assert result.exit_code == 0
+    assert result.output == (
+        "Found 0 files with .s3-ocr.json out of 1 PDFs\n"
+        "Would start 1 tasks for these keys:\n"
+        "blah.pdf\n"
+    )
+
+
+def test_start_with_specified_key(s3, textract):
+    s3.put_object(Bucket="my-bucket", Key="blah2.pdf", Body=b"Fake PDF")
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ["start", "my-bucket", "blah2.pdf"])
+        assert result.exit_code == 0
+    bucket_contents = s3.list_objects_v2(Bucket="my-bucket")["Contents"]
+    assert {b["Key"] for b in bucket_contents} == {
+        "blah.pdf",
+        "blah2.pdf",
+        "blah2.pdf.s3-ocr.json",
+    }
+
+
+def test_start_with_prefix(s3, textract):
+    s3.put_object(Bucket="my-bucket", Key="pre/blah1.pdf", Body=b"Fake PDF")
+    s3.put_object(Bucket="my-bucket", Key="pre/blah2.pdf", Body=b"Fake PDF")
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ["start", "my-bucket", "--prefix", "pre/"])
+        assert result.exit_code == 0, result.output
+    bucket_contents = s3.list_objects_v2(Bucket="my-bucket")["Contents"]
+    assert {b["Key"] for b in bucket_contents} == {
+        "blah.pdf",
+        "pre/blah1.pdf",
+        "pre/blah1.pdf.s3-ocr.json",
+        "pre/blah2.pdf",
+        "pre/blah2.pdf.s3-ocr.json",
+    }
+
+
+@pytest.mark.parametrize(
+    "files,expected",
+    (
+        ([], "0 complete out of 0 jobs\n"),
+        (
+            [
+                ("blah.pdf", b""),
+                ("blah.pdf.s3-ocr.json", b'{"job_id": "x", "etag": x"}'),
+            ],
+            "0 complete out of 1 jobs\n",
+        ),
+        (
+            [
+                ("blah.pdf", b""),
+                ("blah.pdf.s3-ocr.json", b'{"job_id": "x", "etag": x"}'),
+                ("textract-output/x/1", b"{}"),
+            ],
+            "1 complete out of 1 jobs\n",
+        ),
+    ),
+)
+def test_status(s3, files, expected):
+    runner = CliRunner()
+    for name, content in files:
+        s3.put_object(Bucket="my-bucket", Key=name, Body=content)
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ["status", "my-bucket"])
+        assert result.exit_code == 0
+        assert result.output == expected
+
+
+def test_index(s3, tmpdir):
+    index_db = os.path.join(tmpdir, "index.db")
+    populate_ocr_results(s3, multi_page=True)
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(
+            cli, ["index", "my-bucket", index_db], catch_exceptions=False
+        )
+        assert result.exit_code == 0
+    db = sqlite_utils.Database(index_db)
+    assert list(db["pages"].rows) == [
+        {
+            "path": "foo/blah.pdf",
+            "page": 1,
+            "folder": "foo",
+            "text": "Hello there\nline 2",
+        },
+        {
+            "path": "foo/blah.pdf",
+            "page": 2,
+            "folder": "foo",
+            "text": "Page two\nLine 2 of page 2",
+        },
+        {"path": "foo/blah.pdf", "page": 3, "folder": "foo", "text": ""},
+    ]
+    assert list(db["ocr_jobs"].rows) == [
+        {
+            "key": "foo/blah.pdf",
+            "job_id": "x",
+            "etag": '"a4d0cb8bd505f67f3ea1cb5583e49550"',
+            "s3_ocr_etag": ANY,
+        }
+    ]
+    assert list(db["fetched_jobs"].rows) == [{"job_id": "x"}]
+
+
+@pytest.mark.parametrize("combine", (None, "-", "output.json"))
+def test_fetch(s3, combine):
+    populate_ocr_results(s3)
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        args = ["fetch", "my-bucket", "foo/blah.pdf"]
+        if combine:
+            args.extend(["--combine", combine])
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        assert result.exit_code == 0
+        if combine is None:
+            files = os.listdir(".")
+            assert files == ["x-1.json"]
+        else:
+            if combine == "-":
+                combined = result.output
+            else:
+                combined = open("output.json").read()
+            assert json.loads(combined) == {
+                "Blocks": [
+                    {
+                        "Confidence": 100,
+                        "Text": "Hello there",
+                        "BlockType": "LINE",
+                        "Page": 1,
+                    },
+                    {
+                        "Confidence": 100,
+                        "Text": "line 2",
+                        "BlockType": "LINE",
+                        "Page": 1,
+                    },
+                ]
+            }
+
+
+@pytest.mark.parametrize("divider", (True, False))
+def test_text(s3, divider):
+    populate_ocr_results(s3, multi_page=True)
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        args = ["text", "my-bucket", "foo/blah.pdf"]
+        if divider:
+            args.append("--divider")
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        assert result.exit_code == 0
+        if divider:
+            assert (
+                result.output
+                == "Hello there\nline 2\n\n----\n\nPage two\nLine 2 of page 2\n"
+            )
+        else:
+            assert (
+                result.output == "Hello there\nline 2\n\n\nPage two\nLine 2 of page 2\n"
+            )
+
+
+def populate_ocr_results(s3, multi_page=False):
+    for name, content in (
+        ("foo/blah.pdf", b"Predictable ETag"),
+        (
+            "foo/blah.pdf.s3-ocr.json",
+            b'{"job_id": "x", "etag": "\\"a4d0cb8bd505f67f3ea1cb5583e49550\\""}',
+        ),
+        (
+            "textract-output/x/1",
+            json.dumps(
+                {
+                    "Blocks": [
+                        {
+                            "Confidence": 100,
+                            "Text": "Hello there",
+                            "BlockType": "LINE",
+                            "Page": 1,
+                        },
+                        {
+                            "Confidence": 100,
+                            "Text": "line 2",
+                            "BlockType": "LINE",
+                            "Page": 1,
+                        },
+                    ]
+                    + (
+                        [
+                            {
+                                "Confidence": 100,
+                                "Text": "Page two",
+                                "BlockType": "LINE",
+                                "Page": 2,
+                            },
+                            {
+                                "Confidence": 100,
+                                "Text": "Line 2 of page 2",
+                                "BlockType": "LINE",
+                                "Page": 2,
+                            },
+                            # Page3 is blank
+                            {
+                                "BlockType": "PAGE",
+                                "ColumnIndex": None,
+                                "ColumnSpan": None,
+                                "Confidence": None,
+                                "DocumentType": None,
+                                "EntityTypes": None,
+                                "Geometry": {},
+                                "Hint": None,
+                                "Id": "3444df06-df9a-4c0a-93b0-132ae48a9680",
+                                "Page": 3,
+                                "Query": None,
+                                "Relationships": None,
+                                "RowIndex": None,
+                                "RowSpan": None,
+                                "SelectionStatus": None,
+                                "Text": None,
+                                "TextType": None,
+                            },
+                        ]
+                        if multi_page
+                        else []
+                    )
+                }
+            ).encode("utf8"),
+        ),
+    ):
+        s3.put_object(Bucket="my-bucket", Key=name, Body=content)
+
+
+def test_dedupe(s3):
+    populate_ocr_results(s3)
+    s3.put_object(Bucket="my-bucket", Key="duplicate.pdf", Body=b"Predictable ETag")
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ["dedupe", "my-bucket"])
+        assert result.exit_code == 0
+    bucket_contents = s3.list_objects_v2(Bucket="my-bucket")["Contents"]
+    assert {b["Key"] for b in bucket_contents} == {
+        "blah.pdf",
+        "duplicate.pdf.s3-ocr.json",
+        "duplicate.pdf",
+        "foo/blah.pdf.s3-ocr.json",
+        "foo/blah.pdf",
+        "textract-output/x/1",
+    }
+
+
+def test_limit_exceeded_no_retry(s3, mocker):
+    mocked = mocker.patch("s3_ocr.cli.start_document_text_extraction")
+    mocked.side_effect = boto3.client("textract").exceptions.LimitExceededException(
+        error_response={},
+        operation_name="StartDocumentTextExtraction",
+    )
+    runner = CliRunner()
+    result = runner.invoke(cli, ["start", "my-bucket", "--all", "--no-retry"])
+    assert result.exit_code == 1
+    assert result.output == (
+        "Found 0 files with .s3-ocr.json out of 1 PDFs\n"
+        "Error: An error occurred (Unknown) when calling the StartDocumentTextExtraction operation: Unknown\n"
+    )
+
+
+def test_limit_exceeded_automatic_retry(s3, mocker):
+    mocked = mocker.patch("s3_ocr.cli.start_document_text_extraction")
+    # It's going to fail the first time, then succeed
+    mocked.side_effect = [
+        boto3.client("textract").exceptions.LimitExceededException(
+            error_response={},
+            operation_name="StartDocumentTextExtraction",
+        ),
+        {"JobId": "123"},
+    ]
+    runner = CliRunner()
+    result = runner.invoke(cli, ["start", "my-bucket", "--all"])
+    assert result.exit_code == 0
+    assert result.output == (
+        "Found 0 files with .s3-ocr.json out of 1 PDFs\n"
+        "An error occurred (Unknown) when calling the StartDocumentTextExtraction operation: Unknown - retrying...\n"
+        "Starting OCR for blah.pdf, Job ID: 123\n"
+    )
+    assert_expected_contents_after_all(s3)
+
+
+
+================================================
+FILE: .github/workflows/publish.yml
+================================================
+name: Publish Python Package
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: actions/cache@v3
+      name: Configure pip caching
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.py') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Install dependencies
+      run: |
+        pip install -e '.[test]'
+    - name: Run tests
+      run: |
+        pytest
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - uses: actions/cache@v3
+      name: Configure pip caching
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-publish-pip-${{ hashFiles('**/setup.py') }}
+        restore-keys: |
+          ${{ runner.os }}-publish-pip-
+    - name: Install dependencies
+      run: |
+        pip install setuptools wheel twine build
+    - name: Publish
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      run: |
+        python -m build
+        twine upload dist/*
+
+
+
+
+================================================
+FILE: .github/workflows/test.yml
+================================================
+name: Test
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: actions/cache@v3
+      name: Configure pip caching
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.py') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Install dependencies
+      run: |
+        pip install -e '.[test]'
+    - name: Run tests
+      run: |
+        pytest
+        cog --check README.md
+
+

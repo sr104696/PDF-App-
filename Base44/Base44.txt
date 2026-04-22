@@ -1,0 +1,1913 @@
+# PDF Intelligence — Full Codebase Reference
+
+> Auto-generated on 2026-04-21. Contains all source files, entities, and configuration.
+
+---
+
+## Table of Contents
+
+1. [Entities (Database Schemas)](#entities)
+   - [Document](#entity-document)
+   - [Chunk](#entity-chunk)
+   - [SearchHistory](#entity-searchhistory)
+2. [Configuration](#configuration)
+   - [App.jsx](#appjsx)
+   - [index.css](#indexcss)
+   - [tailwind.config.js](#tailwindconfigjs)
+3. [Pages](#pages)
+   - [Library](#page-library)
+   - [SearchPage](#page-searchpage)
+   - [Tools](#page-tools)
+4. [Components](#components)
+   - [Layout](#component-layout)
+   - [UploadZone](#component-uploadzone)
+   - [IndexingModal](#component-indexingmodal)
+   - [DocumentCard](#component-documentcard)
+   - [SearchResult](#component-searchresult)
+   - [FacetSidebar](#component-facetsidebar)
+5. [Libraries / Utilities](#libraries)
+   - [searchEngine.js](#lib-searchenginejs)
+   - [textExtractor.js](#lib-textextractorjs)
+
+---
+
+## Entities
+
+### Entity: Document
+
+**File:** `entities/Document.json`
+
+```json
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Document title"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original file name"
+    },
+    "file_type": {
+      "type": "string",
+      "enum": ["pdf", "epub", "txt"],
+      "description": "File type"
+    },
+    "file_size": {
+      "type": "number",
+      "description": "File size in bytes"
+    },
+    "page_count": {
+      "type": "number",
+      "description": "Number of pages"
+    },
+    "author": {
+      "type": "string",
+      "description": "Document author"
+    },
+    "year": {
+      "type": "string",
+      "description": "Publication year"
+    },
+    "language": {
+      "type": "string",
+      "description": "Document language"
+    },
+    "collection": {
+      "type": "string",
+      "description": "User-defined collection/tag"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "User tags"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "indexing", "indexed", "error", "ocr_required"],
+      "default": "pending",
+      "description": "Indexing status"
+    },
+    "total_chunks": {
+      "type": "number",
+      "description": "Total text chunks indexed"
+    },
+    "total_tokens": {
+      "type": "number",
+      "description": "Total token count"
+    },
+    "indexed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When last indexed"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Error if indexing failed"
+    },
+    "full_text": {
+      "type": "string",
+      "description": "Extracted full text content (stored for search)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "User notes on the document"
+    }
+  },
+  "required": ["title", "file_name", "file_type"]
+}
+```
+
+---
+
+### Entity: Chunk
+
+**File:** `entities/Chunk.json`
+
+```json
+{
+  "name": "Chunk",
+  "type": "object",
+  "properties": {
+    "doc_id": {
+      "type": "string",
+      "description": "Reference to Document entity id"
+    },
+    "doc_title": {
+      "type": "string",
+      "description": "Cached document title"
+    },
+    "doc_author": {
+      "type": "string",
+      "description": "Cached document author"
+    },
+    "doc_year": {
+      "type": "string",
+      "description": "Cached document year"
+    },
+    "doc_type": {
+      "type": "string",
+      "description": "Cached document file type"
+    },
+    "page_num": {
+      "type": "number",
+      "description": "Page number (1-indexed)"
+    },
+    "chunk_index": {
+      "type": "number",
+      "description": "Chunk index within document"
+    },
+    "content": {
+      "type": "string",
+      "description": "Text content of chunk"
+    },
+    "section_header": {
+      "type": "string",
+      "description": "Detected section heading"
+    },
+    "token_count": {
+      "type": "number",
+      "description": "Approximate token count"
+    },
+    "char_start": {
+      "type": "number",
+      "description": "Start char offset in page"
+    },
+    "char_end": {
+      "type": "number",
+      "description": "End char offset in page"
+    },
+    "chunk_id": {
+      "type": "string",
+      "description": "Stable SHA1-based chunk identifier"
+    }
+  },
+  "required": ["doc_id", "content"]
+}
+```
+
+---
+
+### Entity: SearchHistory
+
+**File:** `entities/SearchHistory.json`
+
+```json
+{
+  "name": "SearchHistory",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Search query text"
+    },
+    "result_count": {
+      "type": "number",
+      "description": "Number of results returned"
+    },
+    "filters_used": {
+      "type": "object",
+      "description": "Facet filters applied"
+    },
+    "search_time_ms": {
+      "type": "number",
+      "description": "Search duration in milliseconds"
+    }
+  },
+  "required": ["query"]
+}
+```
+
+---
+
+## Configuration
+
+### App.jsx
+
+```jsx
+import { Toaster } from "@/components/ui/toaster"
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClientInstance } from '@/lib/query-client'
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import PageNotFound from './lib/PageNotFound';
+import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import Layout from '@/components/Layout';
+import Library from '@/pages/Library';
+import SearchPage from '@/pages/SearchPage';
+import Tools from '@/pages/Tools';
+
+const AuthenticatedApp = () => {
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+
+  if (isLoadingPublicSettings || isLoadingAuth) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (authError) {
+    if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
+    if (authError.type === 'auth_required') { navigateToLogin(); return null; }
+  }
+
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Library />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/tools" element={<Tools />} />
+      </Route>
+      <Route path="*" element={<PageNotFound />} />
+    </Routes>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <QueryClientProvider client={queryClientInstance}>
+        <Router>
+          <AuthenticatedApp />
+        </Router>
+        <Toaster />
+      </QueryClientProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;
+```
+
+---
+
+### index.css
+
+```css
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --foreground: 220 15% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 10%;
+    --primary: 235 70% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 93%;
+    --secondary-foreground: 220 15% 25%;
+    --muted: 220 15% 93%;
+    --muted-foreground: 220 10% 50%;
+    --accent: 235 70% 95%;
+    --accent-foreground: 235 70% 40%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 235 70% 55%;
+    --radius: 0.75rem;
+    --success: 142 72% 29%;
+    --warning: 38 92% 50%;
+  }
+
+  .dark {
+    --background: 224 25% 8%;
+    --foreground: 220 15% 92%;
+    --card: 224 22% 12%;
+    --card-foreground: 220 15% 92%;
+    --popover: 224 22% 12%;
+    --popover-foreground: 220 15% 92%;
+    --primary: 235 70% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 20% 18%;
+    --secondary-foreground: 220 15% 75%;
+    --muted: 224 20% 18%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 235 40% 20%;
+    --accent-foreground: 235 70% 75%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 224 20% 20%;
+    --input: 224 20% 20%;
+    --ring: 235 70% 65%;
+    --success: 142 72% 40%;
+    --warning: 38 92% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-inter antialiased;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground/40; }
+}
+
+@layer utilities {
+  .font-inter { font-family: 'Inter', sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+  .glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(235, 85%, 75%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .highlight-match {
+    @apply bg-yellow-200/80 dark:bg-yellow-500/30 text-yellow-900 dark:text-yellow-200 px-0.5 rounded;
+  }
+}
+```
+
+---
+
+### tailwind.config.js
+
+```js
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
+  content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
+  theme: {
+    extend: {
+      fontFamily: {
+        inter: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)'
+      },
+      colors: {
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
+        popover: { DEFAULT: 'hsl(var(--popover))', foreground: 'hsl(var(--popover-foreground))' },
+        primary: { DEFAULT: 'hsl(var(--primary))', foreground: 'hsl(var(--primary-foreground))' },
+        secondary: { DEFAULT: 'hsl(var(--secondary))', foreground: 'hsl(var(--secondary-foreground))' },
+        muted: { DEFAULT: 'hsl(var(--muted))', foreground: 'hsl(var(--muted-foreground))' },
+        accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
+        destructive: { DEFAULT: 'hsl(var(--destructive))', foreground: 'hsl(var(--destructive-foreground))' },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+      },
+      keyframes: {
+        'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },
+        'accordion-up': { from: { height: 'var(--radix-accordion-content-height)' }, to: { height: '0' } },
+        'fade-in': { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+        'slide-in': { from: { opacity: '0', transform: 'translateX(-12px)' }, to: { opacity: '1', transform: 'translateX(0)' } },
+        'pulse-ring': { '0%': { boxShadow: '0 0 0 0 hsl(var(--primary) / 0.4)' }, '70%': { boxShadow: '0 0 0 8px hsl(var(--primary) / 0)' }, '100%': { boxShadow: '0 0 0 0 hsl(var(--primary) / 0)' } },
+        shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
+      },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        'fade-in': 'fade-in 0.3s ease-out',
+        'slide-in': 'slide-in 0.25s ease-out',
+        'pulse-ring': 'pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite',
+        shimmer: 'shimmer 2s linear infinite',
+      },
+      safelist: [
+        'bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-orange-100', 'bg-red-100',
+        'text-blue-700', 'text-green-700', 'text-purple-700', 'text-orange-700', 'text-red-700',
+        'dark:bg-blue-900/30', 'dark:bg-green-900/30', 'dark:bg-purple-900/30',
+        'dark:text-blue-300', 'dark:text-green-300', 'dark:text-purple-300',
+      ],
+    }
+  },
+  plugins: [require("tailwindcss-animate")],
+}
+```
+
+---
+
+## Pages
+
+### Page: Library
+
+**File:** `pages/Library.jsx`
+
+```jsx
+import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { Library as LibraryIcon, Plus, Grid, List, Search, Filter, Trash2, BookOpen, FileText, AlignLeft, RefreshCw } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import DocumentCard from '@/components/DocumentCard';
+import UploadZone from '@/components/UploadZone';
+import IndexingModal from '@/components/IndexingModal';
+import { cn } from '@/lib/utils';
+
+export default function Library() {
+  const [view, setView] = useState('grid');
+  const [filterQuery, setFilterQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filesToIndex, setFilesToIndex] = useState(null);
+  const [showUpload, setShowUpload] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  const { data: docs = [], isLoading } = useQuery({
+    queryKey: ['documents'],
+    queryFn: () => base44.entities.Document.list('-created_date', 200),
+    refetchInterval: 3000,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (doc) => {
+      const chunks = await base44.entities.Chunk.filter({ doc_id: doc.id });
+      await Promise.all(chunks.map(c => base44.entities.Chunk.delete(c.id)));
+      await base44.entities.Document.delete(doc.id);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
+  });
+
+  const reindexMutation = useMutation({
+    mutationFn: async (doc) => {
+      const chunks = await base44.entities.Chunk.filter({ doc_id: doc.id });
+      await Promise.all(chunks.map(c => base44.entities.Chunk.delete(c.id)));
+      await base44.entities.Document.update(doc.id, { status: 'pending', total_chunks: 0 });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
+  });
+
+  const filteredDocs = docs.filter(d => {
+    const matchQuery = !filterQuery ||
+      d.title?.toLowerCase().includes(filterQuery.toLowerCase()) ||
+      d.author?.toLowerCase().includes(filterQuery.toLowerCase());
+    const matchType = filterType === 'all' || d.file_type === filterType;
+    const matchStatus = filterStatus === 'all' || d.status === filterStatus;
+    return matchQuery && matchType && matchStatus;
+  });
+
+  const stats = {
+    total: docs.length,
+    indexed: docs.filter(d => d.status === 'indexed').length,
+    pdf: docs.filter(d => d.file_type === 'pdf').length,
+    epub: docs.filter(d => d.file_type === 'epub').length,
+  };
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="border-b border-border bg-card/50 px-6 py-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <LibraryIcon className="w-5 h-5 text-primary" />
+            <h1 className="text-lg font-semibold">Library</h1>
+            <span className="text-sm text-muted-foreground">
+              {stats.indexed}/{stats.total} indexed
+            </span>
+          </div>
+          <Button onClick={() => setShowUpload(s => !s)} size="sm" className="gap-2">
+            <Plus className="w-4 h-4" />
+            Add Documents
+          </Button>
+        </div>
+
+        <div className="flex gap-2 mb-4">
+          {[
+            { label: 'Total', value: stats.total },
+            { label: 'Indexed', value: stats.indexed, green: true },
+            { label: 'PDFs', value: stats.pdf },
+            { label: 'EPUBs', value: stats.epub },
+          ].map(s => (
+            <div key={s.label} className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border',
+              s.green
+                ? 'bg-green-50 dark:bg-green-950/50 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
+                : 'bg-secondary text-muted-foreground border-border'
+            )}>
+              <span>{s.value}</span>
+              <span>{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {showUpload && (
+          <div className="mb-4">
+            <UploadZone
+              onFilesSelected={files => { setFilesToIndex(files); setShowUpload(false); }}
+            />
+          </div>
+        )}
+
+        <div className="flex gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-48">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter by title or author…"
+              value={filterQuery}
+              onChange={e => setFilterQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-32 h-9 text-sm">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="pdf">PDF</SelectItem>
+              <SelectItem value="epub">EPUB</SelectItem>
+              <SelectItem value="txt">TXT</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-36 h-9 text-sm">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All status</SelectItem>
+              <SelectItem value="indexed">Indexed</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="error">Error</SelectItem>
+              <SelectItem value="ocr_required">Needs OCR</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex border border-border rounded-lg overflow-hidden">
+            <button onClick={() => setView('grid')} className={cn('p-2 transition-colors', view === 'grid' ? 'bg-secondary' : 'hover:bg-secondary/50')}>
+              <Grid className="w-4 h-4" />
+            </button>
+            <button onClick={() => setView('list')} className={cn('p-2 transition-colors border-l border-border', view === 'list' ? 'bg-secondary' : 'hover:bg-secondary/50')}>
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Loading library…</div>
+        ) : filteredDocs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-60 text-center">
+            <BookOpen className="w-12 h-12 text-muted-foreground/30 mb-4" />
+            <p className="text-lg font-medium text-muted-foreground">
+              {docs.length === 0 ? 'Your library is empty' : 'No documents match your filter'}
+            </p>
+            <p className="text-sm text-muted-foreground/70 mt-1">
+              {docs.length === 0 ? 'Add PDF, EPUB, or TXT files to get started' : 'Try different filter options'}
+            </p>
+            {docs.length === 0 && (
+              <Button onClick={() => setShowUpload(true)} className="mt-4 gap-2" size="sm">
+                <Plus className="w-4 h-4" /> Add Documents
+              </Button>
+            )}
+          </div>
+        ) : view === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredDocs.map(doc => (
+              <DocumentCard key={doc.id} doc={doc} onDelete={() => deleteMutation.mutate(doc)} onReindex={() => reindexMutation.mutate(doc)} />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            {filteredDocs.map(doc => (
+              <DocumentCard key={doc.id} doc={doc} compact onDelete={() => deleteMutation.mutate(doc)} onReindex={() => reindexMutation.mutate(doc)} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {filesToIndex && (
+        <IndexingModal
+          files={filesToIndex}
+          onComplete={() => {
+            queryClient.invalidateQueries({ queryKey: ['documents'] });
+            queryClient.invalidateQueries({ queryKey: ['chunks'] });
+          }}
+          onClose={() => setFilesToIndex(null)}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+### Page: SearchPage
+
+**File:** `pages/SearchPage.jsx`
+
+```jsx
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { Search, Zap, Clock, X, BookOpen, SlidersHorizontal, Info } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import SearchResult from '@/components/SearchResult';
+import FacetSidebar from '@/components/FacetSidebar';
+import { search, aggregateFacets } from '@/lib/searchEngine';
+import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+
+const EXAMPLE_QUERIES = [
+  'machine learning algorithms', 'freedom and democracy', 'economic policy',
+  'human consciousness', 'climate change solutions', 'historical analysis',
+];
+
+export default function SearchPage() {
+  const [query, setQuery] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState('');
+  const [filters, setFilters] = useState({ author: null, year: null, type: null });
+  const [showFacets, setShowFacets] = useState(true);
+  const [results, setResults] = useState(null);
+  const [searchMeta, setSearchMeta] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const inputRef = useRef(null);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: chunks = [], isLoading: chunksLoading } = useQuery({
+    queryKey: ['chunks'],
+    queryFn: () => base44.entities.Chunk.list('-created_date', 2000),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: history = [] } = useQuery({
+    queryKey: ['search-history'],
+    queryFn: () => base44.entities.SearchHistory.list('-created_date', 10),
+  });
+
+  const saveHistoryMutation = useMutation({
+    mutationFn: (data) => base44.entities.SearchHistory.create(data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['search-history'] }),
+  });
+
+  const facets = aggregateFacets(chunks);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+      if (e.key === 'Escape' && document.activeElement === inputRef.current) {
+        setQuery('');
+        inputRef.current?.blur();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  function runSearch(q, currentFilters) {
+    if (!q.trim() || chunks.length === 0) return;
+    setIsSearching(true);
+    setSubmittedQuery(q);
+    setTimeout(() => {
+      const { results: r, duration, parsed, total } = search(q, chunks, {
+        authorFilter: currentFilters.author,
+        yearFilter: currentFilters.year,
+        typeFilter: currentFilters.type,
+        maxResults: 50,
+      });
+      setResults(r);
+      setSearchMeta({ duration, total, parsed });
+      setIsSearching(false);
+      saveHistoryMutation.mutate({
+        query: q,
+        result_count: r.length,
+        filters_used: currentFilters,
+        search_time_ms: duration,
+      });
+    }, 10);
+  }
+
+  function handleSubmit(e) {
+    e?.preventDefault();
+    runSearch(query, filters);
+  }
+
+  function handleFilterChange(facet, value) {
+    const newFilters = { ...filters, [facet]: value };
+    setFilters(newFilters);
+    if (submittedQuery) runSearch(submittedQuery, newFilters);
+  }
+
+  function clearFilters() {
+    const cleared = { author: null, year: null, type: null };
+    setFilters(cleared);
+    if (submittedQuery) runSearch(submittedQuery, cleared);
+  }
+
+  function handleHistoryQuery(q) {
+    setQuery(q);
+    setTimeout(() => runSearch(q, filters), 0);
+  }
+
+  const hasResults = results !== null;
+  const indexedCount = chunks.length;
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="border-b border-border bg-card/50 px-6 py-4">
+        <div className="flex items-center gap-2.5 mb-4">
+          <Search className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-semibold">Semantic Search</h1>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-secondary text-muted-foreground">
+            <Zap className="w-3 h-3" />
+            BM25 · Offline
+          </div>
+        </div>
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              ref={inputRef}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder={chunksLoading ? 'Loading index…' : `Search ${indexedCount} chunks… (Ctrl+F)`}
+              className="pl-10 pr-10 h-11 text-sm"
+              disabled={chunksLoading}
+            />
+            {query && (
+              <button type="button" onClick={() => { setQuery(''); setResults(null); setSearchMeta(null); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <Button type="submit" disabled={!query.trim() || chunksLoading || isSearching} className="h-11 px-6">
+            {isSearching ? 'Searching…' : 'Search'}
+          </Button>
+          <Button type="button" variant="outline" size="icon" className="h-11 w-11"
+            onClick={() => setShowFacets(s => !s)} title="Toggle filters">
+            <SlidersHorizontal className={cn('w-4 h-4', showFacets && 'text-primary')} />
+          </Button>
+        </form>
+        {searchMeta && (
+          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+            <span>{searchMeta.total} matches</span>
+            <span>·</span>
+            <span>{searchMeta.duration}ms</span>
+            <span>·</span>
+            <span>terms: {searchMeta.parsed?.expanded?.slice(0, 5).join(', ')}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 flex overflow-hidden">
+        {showFacets && hasResults && (
+          <div className="w-56 shrink-0 p-4 border-r border-border overflow-y-auto">
+            <FacetSidebar facets={facets} filters={filters} onFilterChange={handleFilterChange} onClear={clearFilters} />
+          </div>
+        )}
+        <div className="flex-1 overflow-y-auto p-6">
+          {!chunksLoading && indexedCount === 0 && (
+            <div className="flex flex-col items-center justify-center h-60 text-center">
+              <BookOpen className="w-12 h-12 text-muted-foreground/30 mb-4" />
+              <p className="text-lg font-medium text-muted-foreground">No documents indexed</p>
+              <p className="text-sm text-muted-foreground/70 mt-1 mb-4">Add documents to your library first</p>
+              <Button onClick={() => navigate('/')} size="sm" variant="outline">Go to Library</Button>
+            </div>
+          )}
+          {!hasResults && indexedCount > 0 && (
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-3">Try searching for:</p>
+              <div className="flex flex-wrap gap-2 mb-8">
+                {EXAMPLE_QUERIES.map(q => (
+                  <button key={q} onClick={() => { setQuery(q); setTimeout(() => runSearch(q, filters), 0); }}
+                    className="px-3 py-1.5 bg-secondary hover:bg-accent text-sm rounded-full transition-colors">
+                    {q}
+                  </button>
+                ))}
+              </div>
+              {history.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" /> Recent searches
+                  </p>
+                  <div className="space-y-1">
+                    {history.map(h => (
+                      <button key={h.id} onClick={() => handleHistoryQuery(h.query)}
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-secondary text-sm text-left transition-colors">
+                        <span>{h.query}</span>
+                        <span className="text-xs text-muted-foreground">{h.result_count} results</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {hasResults && results.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-48 text-center">
+              <Search className="w-10 h-10 text-muted-foreground/30 mb-3" />
+              <p className="font-medium text-muted-foreground">No results for "{submittedQuery}"</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">Try different keywords or remove filters</p>
+            </div>
+          )}
+          {hasResults && results.length > 0 && (
+            <div className="space-y-3">
+              {results.map((result, i) => (
+                <SearchResult key={result.chunk.id || i} result={result} rank={i + 1}
+                  onViewDocument={(docId) => navigate(`/?highlight=${docId}`)} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+### Page: Tools
+
+**File:** `pages/Tools.jsx`
+
+```jsx
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { Wrench, FileText, ScanText, BarChart3, Trash2, Info, CheckCircle, AlertCircle, BookOpen, Database } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+function StatCard({ label, value, icon: Icon, color }) {
+  return (
+    <div className="bg-card border border-border rounded-xl p-5">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+        <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', color)}>
+          <Icon className="w-4 h-4" />
+        </div>
+      </div>
+      <p className="text-2xl font-bold">{value ?? '—'}</p>
+    </div>
+  );
+}
+
+export default function Tools() {
+  const [clearing, setClearing] = useState(false);
+  const [clearDone, setClearDone] = useState(false);
+
+  const { data: docs = [] } = useQuery({
+    queryKey: ['documents'],
+    queryFn: () => base44.entities.Document.list(),
+  });
+
+  const { data: allChunks = [] } = useQuery({
+    queryKey: ['chunks-count'],
+    queryFn: () => base44.entities.Chunk.list('-created_date', 5000),
+  });
+
+  const stats = {
+    total: docs.length,
+    indexed: docs.filter(d => d.status === 'indexed').length,
+    error: docs.filter(d => d.status === 'error').length,
+    ocrNeeded: docs.filter(d => d.status === 'ocr_required').length,
+    chunks: allChunks.length,
+    sizeMb: (docs.reduce((s, d) => s + (d.file_size || 0), 0) / 1024 / 1024).toFixed(1),
+  };
+
+  async function clearAll() {
+    if (!window.confirm('Delete all documents and chunks from the index? This cannot be undone.')) return;
+    setClearing(true);
+    try {
+      for (const d of docs) await base44.entities.Document.delete(d.id);
+      for (const c of allChunks) await base44.entities.Chunk.delete(c.id);
+      setClearDone(true);
+      setTimeout(() => setClearDone(false), 3000);
+    } finally {
+      setClearing(false);
+    }
+  }
+
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="px-6 py-4 border-b border-border bg-card/50">
+        <div className="flex items-center gap-2.5">
+          <Wrench className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-semibold">Tools & Settings</h1>
+        </div>
+      </div>
+      <div className="p-6 space-y-6 max-w-3xl">
+        <div>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Index Statistics</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard label="Documents" value={stats.total} icon={FileText} color="bg-primary/10 text-primary" />
+            <StatCard label="Indexed" value={stats.indexed} icon={CheckCircle} color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" />
+            <StatCard label="Chunks" value={stats.chunks.toLocaleString()} icon={Database} color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
+            <StatCard label="Total Size" value={`${stats.sizeMb} MB`} icon={BookOpen} color="bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400" />
+          </div>
+        </div>
+
+        {/* OCR Info */}
+        <div className="bg-card border border-border rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <ScanText className="w-5 h-5 text-primary" />
+            <h2 className="font-semibold">OCR — Image PDFs</h2>
+            <Badge variant="outline" className="text-xs">Info</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Some PDFs contain scanned images instead of selectable text. These are detected automatically and flagged as <strong>"Needs OCR"</strong>.
+          </p>
+          <div className="bg-secondary/50 rounded-lg p-4 space-y-2 text-sm">
+            <p className="font-medium">How to handle image-only PDFs:</p>
+            <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground">
+              <li>Use <strong>Adobe Acrobat</strong> → Enhance Scans → "Make Searchable"</li>
+              <li>Use <strong>tesseract CLI</strong>: <code className="font-mono text-xs bg-background px-1.5 py-0.5 rounded">tesseract input.pdf output pdf</code></li>
+              <li>Use online tools like <strong>ilovepdf.com/ocr-pdf</strong></li>
+              <li>Re-upload the processed PDF here for indexing</li>
+            </ol>
+          </div>
+        </div>
+
+        {/* Search Algorithm */}
+        <div className="bg-card border border-border rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <h2 className="font-semibold">Search Algorithm</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">PDF Intelligence uses a fully offline, zero-dependency semantic search pipeline:</p>
+          <div className="space-y-3">
+            {[
+              { step: '1', title: 'Query Parsing', desc: 'Remove stop words, detect quoted phrases and intent signals.' },
+              { step: '2', title: 'English Stemming', desc: 'Porter-style stemmer normalizes word forms (running → run, economies → econom).' },
+              { step: '3', title: 'Synonym Expansion', desc: 'Static domain dictionary boosts related terms (freedom → liberty, power → authority).' },
+              { step: '4', title: 'Candidate Retrieval', desc: 'Fast scan of all indexed chunks from the database.' },
+              { step: '5', title: 'BM25 Ranking', desc: 'Okapi BM25 (k₁=1.5, b=0.75) reranks candidates by term frequency × IDF.' },
+              { step: '6', title: 'Snippet Extraction', desc: 'Best 280-char window highlighting matched terms in context.' },
+            ].map(({ step, title, desc }) => (
+              <div key={step} className="flex gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{step}</div>
+                <div>
+                  <p className="text-sm font-medium">{title}</p>
+                  <p className="text-xs text-muted-foreground">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Danger zone */}
+        <div className="bg-card border border-destructive/30 rounded-xl p-6">
+          <h2 className="font-semibold text-destructive mb-2">Danger Zone</h2>
+          <p className="text-sm text-muted-foreground mb-4">Clear all indexed documents and chunks. Source files are not deleted — only index data.</p>
+          <Button variant="destructive" onClick={clearAll} disabled={clearing || docs.length === 0} className="gap-2">
+            {clearing ? (
+              <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Clearing…</>
+            ) : clearDone ? (
+              <><CheckCircle className="w-4 h-4" />Index cleared</>
+            ) : (
+              <><Trash2 className="w-4 h-4" />Clear All Index Data</>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Components
+
+### Component: Layout
+
+**File:** `components/Layout.jsx`
+
+```jsx
+import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Search, Wrench, Moon, Sun, Library, Zap } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const navItems = [
+  { to: '/', icon: Library, label: 'Library' },
+  { to: '/search', icon: Search, label: 'Search' },
+  { to: '/tools', icon: Wrench, label: 'Tools' },
+];
+
+export default function Layout() {
+  const [dark, setDark] = useState(() => {
+    return localStorage.getItem('theme') === 'dark' ||
+      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark);
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
+  }, [dark]);
+
+  return (
+    <div className="flex h-screen bg-background overflow-hidden">
+      <aside className="w-16 md:w-56 flex flex-col bg-card border-r border-border shrink-0">
+        <div className="h-14 flex items-center px-3 md:px-5 border-b border-border gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+            <Zap className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <span className="hidden md:block font-semibold text-sm tracking-tight text-foreground">PDF Intelligence</span>
+        </div>
+        <nav className="flex-1 py-4 px-2 md:px-3 space-y-1">
+          {navItems.map(({ to, icon: Icon, label }) => (
+            <NavLink key={to} to={to} end={to === '/'}
+              className={({ isActive }) => cn(
+                'flex items-center gap-3 px-2 md:px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+                isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              )}>
+              <Icon className="w-4.5 h-4.5 shrink-0" size={18} />
+              <span className="hidden md:block">{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+        <div className="p-2 md:p-3 border-t border-border">
+          <button onClick={() => setDark(d => !d)}
+            className="w-full flex items-center gap-3 px-2 md:px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-all">
+            {dark ? <Sun size={18} className="shrink-0" /> : <Moon size={18} className="shrink-0" />}
+            <span className="hidden md:block">{dark ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
+        </div>
+      </aside>
+      <main className="flex-1 overflow-hidden">
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+```
+
+---
+
+### Component: UploadZone
+
+**File:** `components/UploadZone.jsx`
+
+```jsx
+import { useState, useRef } from 'react';
+import { Upload, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const ACCEPTED = ['.pdf', '.epub', '.txt'];
+const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+
+export default function UploadZone({ onFilesSelected, disabled }) {
+  const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState(null);
+  const inputRef = useRef(null);
+
+  function validateFile(file) {
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    if (!ACCEPTED.includes(ext)) return `Unsupported: ${ext}. Use PDF, EPUB or TXT.`;
+    if (file.size > MAX_SIZE) return `File too large (max 100MB): ${file.name}`;
+    return null;
+  }
+
+  function handleFiles(files) {
+    setError(null);
+    const valid = [];
+    const errors = [];
+    for (const f of files) {
+      const err = validateFile(f);
+      if (err) errors.push(err);
+      else valid.push(f);
+    }
+    if (errors.length) setError(errors[0]);
+    if (valid.length) onFilesSelected(valid);
+  }
+
+  function onDrop(e) {
+    e.preventDefault();
+    setDragging(false);
+    if (disabled) return;
+    handleFiles([...e.dataTransfer.files]);
+  }
+
+  return (
+    <div className="space-y-2">
+      <div
+        onDragOver={e => { e.preventDefault(); if (!disabled) setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        onClick={() => !disabled && inputRef.current?.click()}
+        className={cn(
+          'relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200',
+          dragging && !disabled ? 'border-primary bg-accent scale-[1.01]' : 'border-border hover:border-primary/50 hover:bg-secondary/50',
+          disabled && 'opacity-50 cursor-not-allowed'
+        )}
+      >
+        <input ref={inputRef} type="file" multiple accept={ACCEPTED.join(',')}
+          className="hidden" onChange={e => handleFiles([...e.target.files])} disabled={disabled} />
+        <div className="flex flex-col items-center gap-3">
+          <div className={cn('w-12 h-12 rounded-full flex items-center justify-center transition-colors',
+            dragging ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground')}>
+            <Upload className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground">{dragging ? 'Drop files here' : 'Drag & drop files here'}</p>
+            <p className="text-xs text-muted-foreground mt-1">PDF, EPUB, or TXT · up to 100MB each · click to browse</p>
+          </div>
+        </div>
+      </div>
+      {error && (
+        <div className="flex items-center gap-2 text-destructive text-xs px-1">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+### Component: IndexingModal
+
+**File:** `components/IndexingModal.jsx`
+
+```jsx
+import { useEffect, useState, useRef } from 'react';
+import { Loader, CheckCircle, AlertCircle, FileText, BookOpen, AlignLeft } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import { base44 } from '@/api/base44Client';
+import { extractTextFromFile, semanticChunk } from '@/lib/textExtractor';
+
+const TYPE_ICONS = { pdf: FileText, epub: BookOpen, txt: AlignLeft };
+
+export default function IndexingModal({ files, onComplete, onClose }) {
+  const [jobs, setJobs] = useState(files.map(f => ({
+    file: f, name: f.name, status: 'pending', progress: 0, message: 'Waiting…', docId: null,
+  })));
+  const aborted = useRef(false);
+
+  useEffect(() => {
+    processFiles();
+    return () => { aborted.current = true; };
+  }, []);
+
+  async function processFiles() {
+    const results = [];
+    for (let i = 0; i < files.length; i++) {
+      if (aborted.current) break;
+      const file = files[i];
+      try {
+        setJobs(prev => prev.map((j, idx) =>
+          idx === i ? { ...j, status: 'indexing', message: 'Extracting text…', progress: 10 } : j
+        ));
+
+        const extraction = await extractTextFromFile(file, (page, total) => {
+          setJobs(prev => prev.map((j, idx) =>
+            idx === i ? { ...j, progress: 10 + Math.round((page / total) * 50), message: `Reading page ${page}/${total}…` } : j
+          ));
+        });
+
+        setJobs(prev => prev.map((j, idx) =>
+          idx === i ? { ...j, progress: 65, message: 'Chunking text…' } : j
+        ));
+
+        const chunks = semanticChunk(extraction, null, file.name);
+        const totalTokens = chunks.reduce((s, c) => s + (c.tokenCount || 0), 0);
+        const docTitle = extraction.metadata?.title || file.name.replace(/\.(pdf|epub|txt)$/i, '');
+        const fileType = file.name.split('.').pop().toLowerCase();
+
+        let docRecord;
+        if (!aborted.current) {
+          docRecord = await base44.entities.Document.create({
+            title: docTitle, file_name: file.name, file_type: fileType,
+            file_size: file.size, page_count: extraction.numPages,
+            status: extraction.isImageOnly ? 'ocr_required' : 'indexing',
+            total_chunks: chunks.length, total_tokens: totalTokens,
+            full_text: extraction.fullText?.slice(0, 50000) || '',
+            indexed_at: new Date().toISOString(),
+          });
+        }
+
+        setJobs(prev => prev.map((j, idx) =>
+          idx === i ? { ...j, progress: 80, message: `Saving ${chunks.length} chunks…`, docId: docRecord?.id } : j
+        ));
+
+        if (docRecord && !aborted.current && !extraction.isImageOnly) {
+          const batchSize = 20;
+          let saved = 0;
+          for (let b = 0; b < chunks.length; b += batchSize) {
+            if (aborted.current) break;
+            await base44.entities.Chunk.bulkCreate(
+              chunks.slice(b, b + batchSize).map(c => ({
+                doc_id: docRecord.id, doc_title: docTitle,
+                doc_author: docRecord.author || '', doc_year: docRecord.year || '',
+                doc_type: fileType, page_num: c.pageNum, chunk_index: c.chunkIndex,
+                content: c.content, section_header: c.sectionHeader || '',
+                token_count: c.tokenCount, char_start: c.charStart, char_end: c.charEnd, chunk_id: c.chunkId,
+              }))
+            );
+            saved += Math.min(batchSize, chunks.length - b);
+            setJobs(prev => prev.map((j, idx) =>
+              idx === i ? { ...j, progress: 80 + Math.round((saved / chunks.length) * 18) } : j
+            ));
+          }
+          await base44.entities.Document.update(docRecord.id, { status: 'indexed' });
+        }
+
+        setJobs(prev => prev.map((j, idx) =>
+          idx === i ? {
+            ...j, status: extraction.isImageOnly ? 'ocr_required' : 'done',
+            progress: 100, docId: docRecord?.id,
+            message: extraction.isImageOnly ? 'Image-only PDF — OCR required' : `Done! ${chunks.length} chunks indexed`,
+          } : j
+        ));
+        results.push({ file, docId: docRecord?.id, success: true });
+
+      } catch (err) {
+        setJobs(prev => prev.map((j, idx) =>
+          idx === i ? { ...j, status: 'error', progress: 100, message: err.message || 'Failed' } : j
+        ));
+        try {
+          await base44.entities.Document.create({
+            title: file.name, file_name: file.name,
+            file_type: file.name.split('.').pop().toLowerCase(),
+            file_size: file.size, status: 'error', error_message: err.message,
+          });
+        } catch {}
+        results.push({ file, success: false, error: err.message });
+      }
+    }
+    if (!aborted.current) onComplete?.(results);
+  }
+
+  const allDone = jobs.every(j => ['done', 'error', 'ocr_required'].includes(j.status));
+  const doneCount = jobs.filter(j => j.status === 'done').length;
+  const errorCount = jobs.filter(j => j.status === 'error').length;
+
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in">
+        <h2 className="text-lg font-semibold mb-1">Indexing Documents</h2>
+        <p className="text-sm text-muted-foreground mb-5">
+          {allDone ? `Complete — ${doneCount} indexed${errorCount ? `, ${errorCount} failed` : ''}` : 'Processing files for offline search…'}
+        </p>
+        <div className="space-y-4 max-h-72 overflow-y-auto">
+          {jobs.map((job, i) => {
+            const ext = job.name.split('.').pop().toLowerCase();
+            const Icon = TYPE_ICONS[ext] || FileText;
+            return (
+              <div key={i} className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-medium truncate flex-1">{job.name}</span>
+                  {job.status === 'done' && <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />}
+                  {job.status === 'error' && <AlertCircle className="w-4 h-4 text-destructive shrink-0" />}
+                  {job.status === 'indexing' && <Loader className="w-4 h-4 text-primary animate-spin shrink-0" />}
+                  {job.status === 'ocr_required' && <AlertCircle className="w-4 h-4 text-orange-500 shrink-0" />}
+                </div>
+                <Progress value={job.progress} className="h-1.5" />
+                <p className={cn('text-xs', job.status === 'error' ? 'text-destructive' : 'text-muted-foreground')}>{job.message}</p>
+              </div>
+            );
+          })}
+        </div>
+        {allDone && (
+          <button onClick={onClose} className="mt-6 w-full bg-primary text-primary-foreground rounded-lg py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors">
+            Done
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+### Component: DocumentCard
+
+**File:** `components/DocumentCard.jsx`
+
+```jsx
+import { FileText, BookOpen, AlignLeft, Trash2, RefreshCw, Clock, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+const TYPE_ICONS = { pdf: FileText, epub: BookOpen, txt: AlignLeft };
+
+const STATUS_CONFIG = {
+  pending:      { label: 'Pending',    color: 'text-muted-foreground',                          icon: Clock },
+  indexing:     { label: 'Indexing…',  color: 'text-yellow-600 dark:text-yellow-400',           icon: Loader, spin: true },
+  indexed:      { label: 'Indexed',    color: 'text-green-600 dark:text-green-400',             icon: CheckCircle },
+  error:        { label: 'Error',      color: 'text-destructive',                               icon: AlertCircle },
+  ocr_required: { label: 'Needs OCR', color: 'text-orange-600 dark:text-orange-400',            icon: AlertCircle },
+};
+
+function formatSize(bytes) {
+  if (!bytes) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+export default function DocumentCard({ doc, onDelete, onReindex, compact = false }) {
+  const TypeIcon = TYPE_ICONS[doc.file_type] || FileText;
+  const status = STATUS_CONFIG[doc.status] || STATUS_CONFIG.pending;
+  const StatusIcon = status.icon;
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border hover:bg-secondary/30 transition-colors group">
+        <TypeIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{doc.title}</p>
+          <p className="text-xs text-muted-foreground truncate">{doc.author || '—'} · {doc.year || '—'}</p>
+        </div>
+        <div className={cn('flex items-center gap-1 text-xs', status.color)}>
+          <StatusIcon className={cn('w-3 h-3', status.spin && 'animate-spin')} />
+          <span className="hidden sm:inline">{status.label}</span>
+        </div>
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => onReindex?.(doc)} className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground">
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => onDelete?.(doc)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all duration-200 group animate-fade-in">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <TypeIcon className="w-5 h-5 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm leading-snug truncate" title={doc.title}>{doc.title}</h3>
+            {doc.author && <p className="text-xs text-muted-foreground mt-0.5">{doc.author}{doc.year ? ` · ${doc.year}` : ''}</p>}
+          </div>
+        </div>
+        <div className="flex gap-1 shrink-0">
+          <button onClick={() => onReindex?.(doc)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all" title="Re-index">
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => onDelete?.(doc)} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all" title="Delete">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Badge variant="secondary" className="text-xs capitalize">{doc.file_type}</Badge>
+        {doc.page_count && <Badge variant="outline" className="text-xs">{doc.page_count} pages</Badge>}
+        {doc.total_chunks && <Badge variant="outline" className="text-xs">{doc.total_chunks} chunks</Badge>}
+        {doc.collection && <Badge className="text-xs bg-primary/10 text-primary border-0">{doc.collection}</Badge>}
+        {doc.tags?.slice(0, 2).map(tag => <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>)}
+      </div>
+      <div className="mt-3 flex items-center justify-between">
+        <div className={cn('flex items-center gap-1.5 text-xs', status.color)}>
+          <StatusIcon className={cn('w-3.5 h-3.5', status.spin && 'animate-spin')} />
+          <span>{status.label}</span>
+          {doc.status === 'error' && doc.error_message && (
+            <span className="text-muted-foreground ml-1" title={doc.error_message}>— {doc.error_message.slice(0, 40)}</span>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground">{formatSize(doc.file_size)}</span>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+### Component: SearchResult
+
+**File:** `components/SearchResult.jsx`
+
+```jsx
+import { FileText, BookOpen, AlignLeft, BookMarked } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+const TYPE_ICONS = { pdf: FileText, epub: BookOpen, txt: AlignLeft };
+
+export default function SearchResult({ result, rank, onViewDocument }) {
+  const { chunk, score, highlightedParts } = result;
+  const TypeIcon = TYPE_ICONS[chunk.doc_type] || FileText;
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200 cursor-pointer animate-fade-in"
+      onClick={() => onViewDocument?.(chunk.doc_id)}>
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <TypeIcon className="w-4 h-4 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-sm truncate">{chunk.doc_title || 'Untitled'}</h3>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+              {chunk.doc_author && <span>{chunk.doc_author}</span>}
+              {chunk.doc_author && chunk.doc_year && <span>·</span>}
+              {chunk.doc_year && <span>{chunk.doc_year}</span>}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-mono text-muted-foreground bg-secondary px-2 py-0.5 rounded-md">{score.toFixed(2)}</span>
+          <span className="text-xs text-muted-foreground">#{rank}</span>
+        </div>
+      </div>
+      {chunk.section_header && (
+        <div className="flex items-center gap-1.5 text-xs text-accent-foreground bg-accent px-2.5 py-1 rounded-md w-fit mb-2">
+          <BookMarked className="w-3 h-3" />
+          <span>{chunk.section_header}</span>
+        </div>
+      )}
+      <div className="text-sm leading-relaxed text-muted-foreground">
+        {highlightedParts.map((part, i) => (
+          part.highlight
+            ? <mark key={i} className="bg-yellow-200/80 dark:bg-yellow-500/25 text-yellow-900 dark:text-yellow-200 px-0.5 rounded not-italic">{part.text}</mark>
+            : <span key={i}>{part.text}</span>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <Badge variant="outline" className="text-xs">p. {chunk.page_num}</Badge>
+        {chunk.token_count && <Badge variant="outline" className="text-xs">~{chunk.token_count} tokens</Badge>}
+        <Badge variant="secondary" className="text-xs capitalize ml-auto">{chunk.doc_type || 'pdf'}</Badge>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+### Component: FacetSidebar
+
+**File:** `components/FacetSidebar.jsx`
+
+```jsx
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, SlidersHorizontal, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+function FacetGroup({ title, items, selected, onToggle }) {
+  const [open, setOpen] = useState(true);
+  const sorted = Object.entries(items).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  if (sorted.length === 0) return null;
+
+  return (
+    <div className="border-b border-border pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 hover:text-foreground transition-colors">
+        {title}
+        {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+      </button>
+      {open && (
+        <div className="space-y-1">
+          {sorted.map(([value, count]) => (
+            <button key={value} onClick={() => onToggle(value)}
+              className={cn('w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all',
+                selected === value ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground hover:bg-secondary')}>
+              <span className="truncate text-left">{value}</span>
+              <span className={cn('ml-2 shrink-0 tabular-nums', selected === value ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function FacetSidebar({ facets, filters, onFilterChange, onClear }) {
+  const hasFilters = filters.author || filters.year || filters.type;
+
+  return (
+    <div className="w-52 shrink-0 bg-card border border-border rounded-xl p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-1.5 text-sm font-semibold">
+          <SlidersHorizontal className="w-4 h-4 text-primary" />
+          Filters
+        </div>
+        {hasFilters && (
+          <button onClick={onClear} className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-0.5 transition-colors">
+            <X className="w-3 h-3" /> Clear
+          </button>
+        )}
+      </div>
+      <FacetGroup title="Author" items={facets.authors || {}} selected={filters.author}
+        onToggle={v => onFilterChange('author', v === filters.author ? null : v)} />
+      <FacetGroup title="Year" items={facets.years || {}} selected={filters.year}
+        onToggle={v => onFilterChange('year', v === filters.year ? null : v)} />
+      <FacetGroup title="Type" items={facets.types || {}} selected={filters.type}
+        onToggle={v => onFilterChange('type', v === filters.type ? null : v)} />
+    </div>
+  );
+}
+```
+
+---
+
+## Libraries
+
+### lib: searchEngine.js
+
+**File:** `lib/searchEngine.js`
+
+```js
+/**
+ * Offline BM25 Search Engine
+ * Implements BM25 ranking with Snowball-style English stemming
+ * No external dependencies, no internet required
+ */
+
+const STOP_WORDS = new Set([
+  'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
+  'from','as','is','was','are','were','be','been','being','have','has','had',
+  'do','does','did','will','would','could','should','may','might','shall',
+  'that','this','these','those','it','its','i','me','my','we','our','you','your',
+  'he','she','they','them','their','what','which','who','how','when','where','why',
+  'if','then','so','not','no','nor','up','out','off','over','under','again','about',
+  'into','through','during','before','after','above','below','between','such','more',
+  'also','can','just','than','there','here','all','any','both','each','few','most',
+  'other','some','such','into','very','too','own','same','than','only',
+]);
+
+function stem(word) {
+  if (word.length < 4) return word;
+  word = word.toLowerCase();
+  const rules = [
+    [/ational$/, 'ate'], [/tional$/, 'tion'], [/enci$/, 'ence'], [/anci$/, 'ance'],
+    [/izer$/, 'ize'], [/ising$/, 'ise'], [/izing$/, 'ize'], [/ating$/, 'ate'],
+    [/ation$/, 'ate'], [/ations$/, 'ate'], [/nesses$/, ''], [/ness$/, ''],
+    [/ments$/, ''], [/ment$/, ''], [/ities$/, ''], [/ity$/, ''],
+    [/ives$/, ''], [/ive$/, ''], [/ings$/, ''], [/ing$/, ''],
+    [/edly$/, ''], [/ers$/, ''], [/er$/, ''], [/ies$/, 'y'],
+    [/es$/, ''], [/s$/, ''], [/ed$/, ''], [/ly$/, ''],
+  ];
+  for (const [pattern, replacement] of rules) {
+    if (pattern.test(word)) {
+      const candidate = word.replace(pattern, replacement);
+      if (candidate.length >= 3) return candidate;
+    }
+  }
+  return word;
+}
+
+function tokenize(text) {
+  if (!text) return [];
+  return text.toLowerCase()
+    .replace(/[^a-z0-9\s'-]/g, ' ')
+    .split(/\s+/)
+    .filter(t => t.length > 1 && !STOP_WORDS.has(t))
+    .map(stem);
+}
+
+const SYNONYMS = {
+  love: ['affection', 'devotion', 'passion', 'adore'],
+  freedom: ['liberty', 'independence', 'autonomy'],
+  power: ['authority', 'control', 'strength', 'force'],
+  war: ['conflict', 'battle', 'combat', 'fight'],
+  death: ['mortality', 'end', 'demise', 'perish'],
+  knowledge: ['wisdom', 'understanding', 'learning', 'insight'],
+  search: ['find', 'seek', 'query', 'lookup', 'discover'],
+  book: ['text', 'document', 'publication', 'volume'],
+  chapter: ['section', 'part', 'passage'],
+  analysis: ['examination', 'study', 'investigation'],
+  economy: ['economic', 'financial', 'fiscal', 'monetary'],
+  government: ['state', 'administration', 'political', 'policy'],
+  history: ['historical', 'past', 'chronicle', 'annals'],
+  science: ['scientific', 'research', 'study', 'discipline'],
+  human: ['person', 'people', 'individual', 'mankind'],
+};
+
+function expandQuery(terms) {
+  const expanded = new Set(terms);
+  for (const term of terms) {
+    if (SYNONYMS[term]) SYNONYMS[term].forEach(s => expanded.add(stem(s)));
+    for (const [key, syns] of Object.entries(SYNONYMS)) {
+      if (syns.includes(term)) expanded.add(stem(key));
+    }
+  }
+  return [...expanded];
+}
+
+const BM25_K1 = 1.5;
+const BM25_B  = 0.75;
+
+function computeBM25(queryTerms, chunks) {
+  if (!chunks || chunks.length === 0) return [];
+  const N = chunks.length;
+  const df = {};
+  const chunkTermFreqs = chunks.map(chunk => {
+    const terms = tokenize(chunk.content || '');
+    const tf = {};
+    for (const t of terms) tf[t] = (tf[t] || 0) + 1;
+    return { chunk, tf, length: terms.length };
+  });
+  for (const { tf } of chunkTermFreqs) {
+    for (const term of Object.keys(tf)) {
+      df[term] = (df[term] || 0) + 1;
+    }
+  }
+  const avgLen = chunkTermFreqs.reduce((s, c) => s + c.length, 0) / Math.max(N, 1);
+  const scored = chunkTermFreqs.map(({ chunk, tf, length }) => {
+    let score = 0;
+    for (const term of queryTerms) {
+      const freq = tf[term] || 0;
+      if (freq === 0) continue;
+      const idf = Math.log((N - (df[term] || 0) + 0.5) / ((df[term] || 0) + 0.5) + 1);
+      const tfScore = (freq * (BM25_K1 + 1)) / (freq + BM25_K1 * (1 - BM25_B + BM25_B * length / Math.max(avgLen, 1)));
+      score += idf * tfScore;
+    }
+    return { chunk, score };
+  });
+  return scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score);
+}
+
+function extractSnippet(text, queryTerms, maxLen = 280) {
+  if (!text) return '';
+  const lower = text.toLowerCase();
+  let bestPos = 0, bestCount = 0;
+  for (let i = 0; i < lower.length - 50; i += 20) {
+    const window = lower.slice(i, i + maxLen);
+    const count = queryTerms.filter(t => window.includes(t)).length;
+    if (count > bestCount) { bestCount = count; bestPos = i; }
+  }
+  let snippet = text.slice(bestPos, bestPos + maxLen);
+  if (bestPos > 0) snippet = '…' + snippet;
+  if (bestPos + maxLen < text.length) snippet += '…';
+  return snippet;
+}
+
+function highlightSnippet(snippet, queryTerms) {
+  if (!snippet) return [{ text: '', highlight: false }];
+  const patterns = queryTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  if (patterns.length === 0) return [{ text: snippet, highlight: false }];
+  const parts = [];
+  let lastIndex = 0;
+  const re = new RegExp(`(${patterns.join('|')})`, 'gi');
+  let match;
+  while ((match = re.exec(snippet)) !== null) {
+    if (match.index > lastIndex) parts.push({ text: snippet.slice(lastIndex, match.index), highlight: false });
+    parts.push({ text: match[0], highlight: true });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < snippet.length) parts.push({ text: snippet.slice(lastIndex), highlight: false });
+  return parts.length > 0 ? parts : [{ text: snippet, highlight: false }];
+}
+
+function parseQuery(rawQuery) {
+  const isQuoted = /^"(.+)"$/.test(rawQuery.trim());
+  const clean = rawQuery.replace(/"/g, '').trim();
+  const tokens = tokenize(clean);
+  const expanded = isQuoted ? tokens : expandQuery(tokens);
+  return { rawQuery: clean, tokens, expanded, isQuoted };
+}
+
+export function search(rawQuery, chunks, options = {}) {
+  const { authorFilter, yearFilter, typeFilter, maxResults = 50 } = options;
+  const start = performance.now();
+  const parsed = parseQuery(rawQuery);
+  if (parsed.expanded.length === 0) return { results: [], duration: 0, parsed };
+
+  let candidates = chunks;
+  if (authorFilter) candidates = candidates.filter(c => c.doc_author?.toLowerCase().includes(authorFilter.toLowerCase()));
+  if (yearFilter)   candidates = candidates.filter(c => c.doc_year === yearFilter);
+  if (typeFilter)   candidates = candidates.filter(c => c.doc_type === typeFilter);
+
+  const scored = computeBM25(parsed.expanded, candidates);
+  const docBest = {};
+  for (const { chunk, score } of scored) {
+    if (!docBest[chunk.doc_id] || score > docBest[chunk.doc_id].score)
+      docBest[chunk.doc_id] = { chunk, score };
+  }
+
+  const results = scored.slice(0, maxResults).map(({ chunk, score }) => {
+    const snippet = extractSnippet(chunk.content, parsed.expanded);
+    const highlightedParts = highlightSnippet(snippet, parsed.tokens);
+    return { chunk, score: Math.round(score * 100) / 100, snippet, highlightedParts, isTopForDoc: docBest[chunk.doc_id]?.chunk === chunk };
+  });
+
+  const duration = Math.round(performance.now() - start);
+  return { results, duration, parsed, total: scored.length };
+}
+
+export function aggregateFacets(chunks) {
+  const authors = {}, years = {}, types = {};
+  for (const c of chunks) {
+    if (c.doc_author) authors[c.doc_author] = (authors[c.doc_author] || 0) + 1;
+    if (c.doc_year)   years[c.doc_year]     = (years[c.doc_year]     || 0) + 1;
+    if (c.doc_type)   types[c.doc_type]     = (types[c.doc_type]     || 0) + 1;
+  }
+  return { authors, years, types };
+}
+
+export { tokenize, stem, parseQuery, highlightSnippet };
+```
+
+---
+
+### lib: textExtractor.js
+
+**File:** `lib/textExtractor.js`
+
+```js
+/**
+ * Client-side text extraction from PDF / EPUB / TXT files
+ * Uses PDF.js (CDN) for PDF extraction
+ */
+
+let pdfjsLib = null;
+
+async function loadPdfJs() {
+  if (pdfjsLib) return pdfjsLib;
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  document.head.appendChild(script);
+  await new Promise((resolve, reject) => { script.onload = resolve; script.onerror = reject; });
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib = window.pdfjsLib;
+  return pdfjsLib;
+}
+
+export async function extractTextFromPDF(file, onProgress) {
+  const lib = await loadPdfJs();
+  if (!lib) throw new Error('PDF.js could not be loaded');
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await lib.getDocument({ data: arrayBuffer }).promise;
+  const numPages = pdf.numPages;
+  const pages = [];
+  for (let i = 1; i <= numPages; i++) {
+    if (onProgress) onProgress(i, numPages);
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map(item => item.str).join(' ').replace(/\s+/g, ' ').trim();
+    pages.push({ pageNum: i, text: pageText });
+  }
+  const fullText = pages.map(p => p.text).join('\n\n');
+  const isImageOnly = fullText.trim().length < 50 && numPages > 0;
+  return { pages, fullText, numPages, isImageOnly, metadata: { title: file.name.replace(/\.pdf$/i, '') } };
+}
+
+export async function extractTextFromFile(file, onProgress) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'pdf') return extractTextFromPDF(file, onProgress);
+
+  if (ext === 'txt') {
+    const text = await file.text();
+    const words = text.split(/\s+/);
+    const pages = [];
+    for (let i = 0; i < words.length; i += 500) {
+      pages.push({ pageNum: Math.floor(i / 500) + 1, text: words.slice(i, i + 500).join(' ') });
+    }
+    return { pages, fullText: text, numPages: pages.length, isImageOnly: false, metadata: { title: file.name.replace(/\.txt$/i, '') } };
+  }
+
+  if (ext === 'epub') {
+    const text = await file.text();
+    const stripped = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const words = stripped.split(/\s+/);
+    const pages = [];
+    for (let i = 0; i < words.length; i += 500) {
+      pages.push({ pageNum: Math.floor(i / 500) + 1, text: words.slice(i, i + 500).join(' ') });
+    }
+    return { pages, fullText: stripped.slice(0, 100000), numPages: pages.length, isImageOnly: false, metadata: { title: file.name.replace(/\.epub$/i, '') } };
+  }
+
+  throw new Error(`Unsupported file type: .${ext}`);
+}
+
+const MAX_CHUNK_TOKENS = 400;
+const MIN_CHUNK_TOKENS = 30;
+
+function estimateTokens(text) { return Math.ceil(text.split(/\s+/).length * 1.3); }
+
+function detectSectionHeader(text) {
+  const lines = text.split('\n');
+  for (const line of lines.slice(0, 3)) {
+    const trimmed = line.trim();
+    if (trimmed.length > 3 && trimmed.length < 120 &&
+      (/^(chapter|section|part|appendix|\d+\.|\d+\s)/i.test(trimmed) ||
+        trimmed === trimmed.toUpperCase() || /^#{1,3}\s/.test(trimmed))) {
+      return trimmed.replace(/^#+\s*/, '');
+    }
+  }
+  return null;
+}
+
+function splitBySentence(text) {
+  return text.replace(/([.!?])\s+([A-Z])/g, '$1\n$2').split('\n').map(s => s.trim()).filter(s => s.length > 0);
+}
+
+function chunkPage(pageText, pageNum, docPath) {
+  if (!pageText || pageText.trim().length === 0) return [];
+  const paragraphs = pageText.split(/\n\n+/).filter(p => p.trim().length > 0);
+  const chunks = [];
+  let buffer = '', charStart = 0, bufferStart = 0;
+  const sectionHeader = detectSectionHeader(pageText);
+
+  for (const para of paragraphs) {
+    const sentences = splitBySentence(para);
+    for (const sentence of sentences) {
+      const candidate = buffer ? buffer + ' ' + sentence : sentence;
+      if (estimateTokens(candidate) > MAX_CHUNK_TOKENS && buffer) {
+        if (estimateTokens(buffer) >= MIN_CHUNK_TOKENS) {
+          chunks.push({ content: buffer.trim(), pageNum, sectionHeader, charStart: bufferStart, charEnd: bufferStart + buffer.length, tokenCount: estimateTokens(buffer) });
+        }
+        buffer = sentence; bufferStart = charStart;
+      } else {
+        buffer = candidate;
+      }
+      charStart += sentence.length + 1;
+    }
+    if (buffer && estimateTokens(buffer) >= MIN_CHUNK_TOKENS) {
+      chunks.push({ content: buffer.trim(), pageNum, sectionHeader, charStart: bufferStart, charEnd: bufferStart + buffer.length, tokenCount: estimateTokens(buffer) });
+      buffer = ''; bufferStart = charStart;
+    }
+  }
+  if (buffer && estimateTokens(buffer) >= MIN_CHUNK_TOKENS) {
+    chunks.push({ content: buffer.trim(), pageNum, sectionHeader, charStart: bufferStart, charEnd: bufferStart + buffer.length, tokenCount: estimateTokens(buffer) });
+  }
+  return chunks;
+}
+
+export function semanticChunk(extractionResult, docId, filePath) {
+  const allChunks = [];
+  for (const { pageNum, text } of extractionResult.pages) {
+    const pageChunks = chunkPage(text, pageNum, filePath);
+    pageChunks.forEach((chunk, i) => {
+      const raw = `${filePath}::p${pageNum}::c${i}::${chunk.charStart}`;
+      const chunkId = btoa(raw).replace(/[^a-zA-Z0-9]/g, '').slice(0, 24);
+      allChunks.push({ ...chunk, chunkId, chunkIndex: allChunks.length });
+    });
+  }
+  return allChunks;
+}
+```
+
+---
+
+*End of PDF Intelligence Codebase Reference*

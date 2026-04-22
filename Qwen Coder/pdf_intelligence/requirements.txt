@@ -1,0 +1,6 @@
+pdfplumber==0.11.0
+pdfminer.six==20231228
+Pillow==10.3.0
+snowballstemmer==2.2.0
+EbookLib==0.18
+beautifulsoup4==4.12.3

@@ -1,0 +1,5 @@
+{
+  "_comment": "User-editable synonym dictionary. Reload takes effect on next search.",
+  "_format": "{ 'word': ['synonym1', 'synonym2', ...] }",
+  "_note": "This is an ADDITIVE BOOST layer only (sheet 8 v2). Primary semantic mechanism is Snowball BM25."
+}

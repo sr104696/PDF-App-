@@ -1,0 +1,1639 @@
+Directory structure:
+└── dogsheep-dogsheep-beta/
+    ├── README.md
+    ├── LICENSE
+    ├── pyproject.toml
+    ├── dogsheep_beta/
+    │   ├── __init__.py
+    │   ├── cli.py
+    │   ├── utils.py
+    │   └── templates/
+    │       └── beta.html
+    ├── tests/
+    │   ├── test_cli.py
+    │   └── test_plugin.py
+    └── .github/
+        └── workflows/
+            ├── publish.yml
+            └── test.yml
+
+================================================
+FILE: README.md
+================================================
+# dogsheep-beta
+
+[![PyPI](https://img.shields.io/pypi/v/dogsheep-beta.svg)](https://pypi.org/project/dogsheep-beta/)
+[![Changelog](https://img.shields.io/github/v/release/dogsheep/beta?include_prereleases&label=changelog)](https://github.com/dogsheep/beta/releases)
+[![Tests](https://github.com/dogsheep/beta/workflows/Test/badge.svg)](https://github.com/dogsheep/beta/actions?query=workflow%3ATest)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/dogsheep/beta/blob/main/LICENSE)
+
+Build a search index across content from multiple SQLite database tables and run faceted searches against it using Datasette
+
+## Example
+
+A live example of this plugin is running at https://datasette.io/-/beta - configured using [this YAML file](https://github.com/simonw/datasette.io/blob/main/templates/dogsheep-beta.yml).
+
+Read more about how this example works in [Building a search engine for datasette.io](https://simonwillison.net/2020/Dec/19/dogsheep-beta/).
+
+## Installation
+
+Install this tool like so:
+
+    $ pip install dogsheep-beta
+
+## Usage
+
+Run the indexer using the `dogsheep-beta` command-line tool:
+
+    $ dogsheep-beta index dogsheep.db config.yml
+
+The `config.yml` file contains details of the databases and document types that should be indexed:
+
+```yaml
+twitter.db:
+    tweets:
+        sql: |-
+            select
+                tweets.id as key,
+                'Tweet by @' || users.screen_name as title,
+                tweets.created_at as timestamp,
+                tweets.full_text as search_1
+            from tweets join users on tweets.user = users.id
+    users:
+        sql: |-
+            select
+                id as key,
+                name || ' @' || screen_name as title,
+                created_at as timestamp,
+                description as search_1
+            from users
+```
+
+This will create a `search_index` table in the `dogsheep.db` database populated by data from those SQL queries.
+
+By default the search index that this tool creates will be configured for Porter stemming. This means that searches for words like `run` will match documents containing `runs` or `running`.
+
+If you don't want to use Porter stemming, use the `--tokenize none` option:
+
+    $ dogsheep-beta index dogsheep.db config.yml --tokenize none
+
+You can pass other SQLite tokenize argumenst here, see [the SQLite FTS tokenizers documentation](https://www.sqlite.org/fts5.html#tokenizers).
+
+## Columns
+
+The columns that can be returned by our query are:
+
+- `key` - a unique (within that type) primary key
+- `title` - the title for the item
+- `timestamp` - an ISO8601 timestamp, e.g. `2020-09-02T21:00:21`
+- `search_1` - a larger chunk of text to be included in the search index
+- `category` - an integer category ID, see below
+- `is_public` - an integer (0 or 1, defaults to 0 if not set) specifying if this is public or not
+
+Public records are things like your public tweets, blog posts and GitHub commits.
+
+## Categories
+
+Indexed items can be assigned a category. Categories are integers that correspond to records in the `categories` table, which defaults to containing the following:
+
+|   id | name       |
+|------|------------|
+|    1 | created    |
+|    2 | saved      |
+|    3 | received   |
+
+`created` is for items that have been created by the Dogsheep instance owner.
+
+`saved` is for items that they have saved, liked or favourited.
+
+`received` is for items that have been specifically sent to them by other people - incoming emails or direct messages for example.
+
+## Datasette plugin
+
+Run `datasette install dogsheep-beta` (or use `pip install dogsheep-beta` in the same environment as Datasette) to install the Dogsheep Beta Datasette plugin.
+
+Once installed, a custom search interface will be made available at `/-/beta`. You can use this interface to execute searches.
+
+The Datasette plugin has some configuration options. You can set these by adding the following to your `metadata.json` configuration file:
+
+```json
+{
+    "plugins": {
+        "dogsheep-beta": {
+            "database": "beta",
+            "config_file": "dogsheep-beta.yml",
+            "template_debug": true
+        }
+    }
+}
+```
+The configuration settings for the plugin are:
+- `database` - the database file that contains your search index. If the file is `beta.db` you should set `database` to `beta`.
+- `config_file` - the YAML file containing your Dogsheep Beta configuration.
+- `template_debug` - set this to `true` to enable debugging output if errors occur in your custom templates, see below.
+
+## Custom results display
+
+Each indexed item type can define custom display HTML as part of the `config.yml` file. It can do this using a `display` key containing a fragment of Jinja template, and optionally a `display_sql` key with extra SQL to execute to fetch the data to display.
+
+Here's how to define a custom display template for a tweet:
+
+```yaml
+twitter.db:
+    tweets:
+        sql: |-
+            select
+                tweets.id as key,
+                'Tweet by @' || users.screen_name as title,
+                tweets.created_at as timestamp,
+                tweets.full_text as search_1
+            from tweets join users on tweets.user = users.id
+        display: |-
+            <p>{{ title }} - tweeted at {{ timestamp }}</p>
+            <blockquote>{{ search_1 }}</blockquote>
+```
+This example reuses the value that were stored in the `search_index` table when the indexing query was run.
+
+To load in extra values to display in the template, use a `display_sql` query like this:
+
+```yaml
+twitter.db:
+    tweets:
+        sql: |-
+            select
+                tweets.id as key,
+                'Tweet by @' || users.screen_name as title,
+                tweets.created_at as timestamp,
+                tweets.full_text as search_1
+            from tweets join users on tweets.user = users.id
+        display_sql: |-
+            select
+                users.screen_name,
+                tweets.full_text,
+                tweets.created_at
+            from
+                tweets join users on tweets.user = users.id
+            where
+                tweets.id = :key
+        display: |-
+            <p>{{ display.screen_name }} - tweeted at {{ display.created_at }}</p>
+            <blockquote>{{ display.full_text }}</blockquote>
+```
+The `display_sql` query will be executed for every search result, passing the key value from the `search_index` table as the `:key` parameter and the user's search term as the `:q` parameter.
+
+This performs well because [many small queries are efficient in SQLite](https://www.sqlite.org/np1queryprob.html).
+
+If an error occurs while rendering one of your templates the search results page will return a 500 error. You can use the `template_debug` configuration setting described above to instead output debugging information for the search results item that experienced the error.
+
+## Displaying maps
+
+This plugin will eventually include a number of useful shortcuts for rendering interesting content.
+
+The first available shortcut is for displaying maps. Make your custom content output something like this:
+
+```html
+<div
+    data-map-latitude="{{ display.latitude }}"
+    data-map-longitude="{{ display.longitude }}"
+    style="display: none; float: right; width: 250px; height: 200px; background-color: #ccc;"
+></div>
+```
+JavaScript on the page will look for any elements with `data-map-latitude` and `data-map-longitude` and, if it finds any, will load Leaflet and convert those elements into maps centered on that location. The default zoom level will be 12, or you can set a `data-map-zoom` attribute to customize this.
+
+## Development
+
+To run the tests:
+
+    uv run pytest
+
+To run tests against Datasette pre-1.0:
+
+    uv run --with 'datasette<1.0' pytest
+
+To run tests against Datasette 1.0 and higher:
+
+    uv run --with 'datasette>=1.0a26' pytest
+
+
+
+================================================
+FILE: LICENSE
+================================================
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+
+
+================================================
+FILE: pyproject.toml
+================================================
+[project]
+name = "dogsheep-beta"
+version = "0.11"
+description = "Build a search index across content from multiple SQLite database tables and run faceted searches against it using Datasette"
+readme = "README.md"
+authors = [{name = "Simon Willison"}]
+requires-python = ">=3.10"
+license = "Apache-2.0"
+dependencies = [
+    "datasette>=0.50.2",
+    "click",
+    "PyYAML",
+    "sqlite-utils>=3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/dogsheep/beta"
+Issues = "https://github.com/dogsheep/beta/issues"
+CI = "https://github.com/dogsheep/beta/actions"
+Changelog = "https://github.com/dogsheep/beta/releases"
+
+[project.scripts]
+dogsheep-beta = "dogsheep_beta.cli:cli"
+
+[project.entry-points.datasette]
+beta = "dogsheep_beta"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "beautifulsoup4",
+    "html5lib",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
+
+
+
+================================================
+FILE: dogsheep_beta/__init__.py
+================================================
+from datasette import hookimpl
+from dogsheep_beta.utils import parse_metadata
+import html
+import urllib
+from jinja2 import Template
+import json
+
+TIMELINE_SQL = """
+select
+  search_index.rowid,
+  search_index.type,
+  search_index.key,
+  search_index.title,
+  search_index.category,
+  search_index.timestamp,
+  search_index.search_1
+from
+  search_index
+{where}
+  {where_clauses}
+order by
+  {order_by}
+limit 40
+"""
+
+SEARCH_SQL = """
+select
+  search_index_fts.rank,
+  search_index.rowid,
+  search_index.type,
+  search_index.key,
+  search_index.title,
+  search_index.category,
+  search_index.timestamp,
+  search_index.search_1
+from
+  search_index join search_index_fts on search_index.rowid = search_index_fts.rowid
+{where}
+  {where_clauses}
+order by
+  {order_by}
+limit 100
+"""
+FILTER_COLS = ("type", "category", "is_public")
+SORT_ORDERS = {
+    "oldest": "search_index.timestamp",
+    "newest": "search_index.timestamp desc",
+}
+
+
+class InnerResponseError(Exception):
+    pass
+
+
+async def beta(request, datasette):
+    from datasette.utils.asgi import Response
+    from datasette.utils import path_with_removed_args, path_with_replaced_args
+
+    config = datasette.plugin_config("dogsheep-beta") or {}
+    database_name = config.get("database") or datasette.get_database().name
+    dogsheep_beta_config_file = config["config_file"]
+    template_debug = bool(config.get("template_debug"))
+    rules = parse_metadata(open(dogsheep_beta_config_file).read())
+    q = (request.args.get("q") or "").strip()
+    sorted_by = "relevance" if q else "newest"
+    if request.args.get("sort") in SORT_ORDERS:
+        sorted_by = request.args["sort"]
+    other_sort_orders = []
+    for sort_order in ("relevance", "newest", "oldest"):
+        if not q and sort_order == "relevance":
+            continue
+        if sort_order != sorted_by:
+            other_sort_orders.append(
+                {
+                    "label": sort_order,
+                    "url": path_with_replaced_args(request, {"sort": sort_order})
+                    if sort_order != "relevance"
+                    else path_with_removed_args(request, {"sort"}),
+                }
+            )
+    results = []
+    facets = {}
+    count = None
+
+    results = await search(datasette, database_name, request)
+    count, facets = await get_count_and_facets(datasette, database_name, request)
+    await process_results(datasette, results, rules, q, template_debug)
+
+    hiddens = [
+        {"name": column, "value": request.args[column]}
+        for column in FILTER_COLS
+        if column in request.args
+    ]
+    return Response.html(
+        await datasette.render_template(
+            "beta.html",
+            {
+                "q": q or "",
+                "count": count,
+                "results": results,
+                "facets": facets,
+                "hiddens": hiddens,
+                "sorted_by": sorted_by,
+                "other_sort_orders": other_sort_orders,
+            },
+            request=request,
+        )
+    )
+
+
+async def search(datasette, database_name, request):
+    from datasette.utils import sqlite3, escape_fts
+
+    database = datasette.get_database(database_name)
+    q = (request.args.get("q") or "").strip()
+
+    if q:
+        default_sort = "search_index_fts.rank, search_index.timestamp desc"
+    else:
+        default_sort = "search_index.timestamp desc"
+    order_by = SORT_ORDERS.get(request.args.get("sort"), default_sort)
+
+    params = {"query": q}
+    where_clauses = []
+    if request.args.get("timestamp__date"):
+        where_clauses.append('date("timestamp") = :date')
+        params["date"] = request.args["timestamp__date"]
+    sql = TIMELINE_SQL
+    if q:
+        sql = SEARCH_SQL
+        where_clauses.append("search_index_fts match :query")
+    for arg in FILTER_COLS:
+        if arg in request.args:
+            where_clauses.append("[{arg}]=:{arg}".format(arg=arg))
+            params[arg] = request.args[arg]
+    sql_to_execute = sql.format(
+        where=" where " if where_clauses else "",
+        where_clauses=" and ".join(where_clauses),
+        order_by=order_by,
+    )
+    try:
+        results = await database.execute(sql_to_execute, params)
+    except sqlite3.OperationalError as e:
+        params["query"] = escape_fts(params["query"])
+        results = await database.execute(sql_to_execute, params)
+    return [dict(r) for r in results.rows]
+
+
+async def process_results(datasette, results, rules, q, template_debug=False):
+    # Adds a 'display' property with HTML to the results
+    templates_by_type = {}
+    rules_by_type = {}
+    for db_name, types in rules.items():
+        for type_, meta in types.items():
+            rules_by_type["{}/{}".format(db_name, type_)] = meta
+
+    for result in results:
+        type_ = result["type"]
+        meta = rules_by_type[type_]
+        result["display"] = {}
+        if meta.get("display_sql"):
+            db = datasette.get_database(type_.split(".")[0])
+            display_results = await db.execute(
+                meta["display_sql"], {"key": result["key"], "q": q}
+            )
+            first = display_results.first()
+            if first:
+                result["display"] = dict(first)
+        output = None
+        if meta.get("display"):
+            if type_ not in templates_by_type:
+                compiled = Template(meta["display"], autoescape=True)
+                templates_by_type[type_] = compiled
+            else:
+                compiled = templates_by_type[type_]
+            try:
+                output = compiled.render({**result, **{"json": json}})
+            except Exception as e:
+                if not template_debug:
+                    raise
+                output = '<p style="color: red">{}</p><pre>{}</pre><p>Template:</p><pre>{}</pre>'.format(
+                    html.escape(str(e)),
+                    html.escape(json.dumps(result, default=repr, indent=4)),
+                    html.escape(meta["display"]),
+                )
+        else:
+            output = "<pre>{}</pre>".format(
+                html.escape(json.dumps(result, default=repr, indent=4))
+            )
+        result["output"] = output
+
+
+async def get_count_and_facets(datasette, database_name, request):
+    from datasette.utils.asgi import Request, Response
+    from datasette.utils import sqlite3, escape_fts
+
+    q = (request.args.get("q") or "").strip()
+    timestamp__date = request.args.get("timestamp__date") or ""
+
+    async def execute_search(searchmode_raw):
+        args = {
+            "_facet": ["type", "category", "is_public"],
+            "_facet_date": ["timestamp"],
+            "_extra": "count",
+            "_size": 0,
+        }
+        if q:
+            args["_search"] = q
+            if searchmode_raw:
+                args["_searchmode"] = "raw"
+        if timestamp__date:
+            args["timestamp__date"] = timestamp__date
+        for column in FILTER_COLS:
+            if column in request.args:
+                args[column] = request.args[column]
+
+        path_with_query_string = "/{}/search_index.json?{}".format(
+            database_name,
+            urllib.parse.urlencode(
+                args,
+                doseq=True,
+            ),
+        )
+        inner_response = await datasette.client.get(
+            path_with_query_string, cookies=request.cookies
+        )
+        if inner_response.status_code != 200:
+            raise InnerResponseError(inner_response.status_code)
+        data = inner_response.json()
+        facet_results = data["facet_results"]
+        # Datasette >= 1.0 nests facets under "results"
+        if "results" in facet_results and "timed_out" in facet_results:
+            facets = facet_results["results"]
+        else:
+            facets = facet_results
+        # Datasette < 1.0 uses filtered_table_rows_count,
+        # >= 1.0 uses count (via _extra=count)
+        count = data.get("filtered_table_rows_count") or data.get("count") or 0
+        return count, facets
+
+    try:
+        count, facets = await execute_search(True)
+    except InnerResponseError as e:
+        count, facets = await execute_search(False)
+
+    facets = facets.values()
+    # Rewrite toggle_url on facet_results
+    # ../search_index.json?_search=wolf&_facet=type&_facet=category&_facet=is_public&_size=0&category=2
+    for facet in facets:
+        for result in facet["results"]:
+            bits = urllib.parse.urlparse(result["toggle_url"])
+            qs_bits = dict(urllib.parse.parse_qsl(bits.query))
+            to_remove = [k for k in qs_bits if k.startswith("_")]
+            for k in to_remove:
+                qs_bits.pop(k)
+            qs_bits["q"] = q
+            result["toggle_url"] = "?" + urllib.parse.urlencode(qs_bits)
+    return count, facets
+
+
+@hookimpl
+def register_routes():
+    return [("/-/beta", beta)]
+
+
+@hookimpl
+def extra_template_vars():
+    return {"intcomma": lambda s: "{:,}".format(int(s))}
+
+
+
+================================================
+FILE: dogsheep_beta/cli.py
+================================================
+import click
+from .utils import parse_metadata, run_indexer
+
+
+@click.group()
+@click.version_option()
+def cli():
+    "Dogsheep search index"
+
+
+@cli.command()
+@click.argument(
+    "db_path",
+    type=click.Path(file_okay=True, dir_okay=False, allow_dash=False),
+    required=True,
+)
+@click.argument(
+    "config",
+    type=click.Path(file_okay=True, dir_okay=False, allow_dash=True),
+    required=True,
+)
+@click.option(
+    "--tokenize",
+    help="Tokenizer to use. Defaults to porter, set to none to disable.",
+    default="porter",
+)
+@click.option(
+    "-d",
+    "--database",
+    multiple=True,
+    help="Databases to index - defaults to all",
+)
+def index(db_path, config, tokenize, database):
+    "Create a search index based on rules in the config file"
+    rules = parse_metadata(open(config).read())
+    run_indexer(
+        db_path,
+        rules,
+        tokenize=None if tokenize == "none" else tokenize,
+        databases=database,
+    )
+
+
+
+================================================
+FILE: dogsheep_beta/utils.py
+================================================
+import json
+import sqlite_utils
+import yaml
+
+COLUMNS = {
+    "type": str,
+    "key": str,
+    "title": str,
+    "timestamp": str,
+    "category": int,
+    "is_public": int,
+    "search_1": str,
+    "search_2": str,
+    "search_3": str,
+}
+INDEXES = [("timestamp",), ("category",), ("is_public",)]
+FOREIGN_KEYS = [("category", "categories", "id")]
+DEFAULTS = {"is_public": 0}
+NOT_NULL = {
+    "is_public",
+}
+
+CATEGORIES = [
+    {"id": 1, "name": "created"},
+    {"id": 2, "name": "saved"},
+    {"id": 3, "name": "received"},
+]
+
+
+def run_indexer(db_path, rules, tokenize="porter", databases=None):
+    db = sqlite_utils.Database(db_path)
+    ensure_table_and_indexes(db, tokenize)
+    db.conn.close()
+
+    # We connect to each database in turn and attach our index
+    for i, (db_name, type_rules) in enumerate(rules.items()):
+        if databases and db_name not in databases:
+            continue
+        other_db = sqlite_utils.Database(db_name)
+        other_db.conn.execute("ATTACH DATABASE '{}' AS index1".format(db_path))
+        for type_, info in type_rules.items():
+            # Execute SQL with limit 0 to figure out the columns
+            sql = info["sql"]
+            # Bit of a hack - we replace the starting `select ` with one
+            # that also includes the hard-coded type
+            sql_rest = sql.split("select", 1)[1]
+            sql = "select '{}/{}' as type,{}".format(db_name, type_, sql_rest)
+            columns = derive_columns(other_db, sql)
+            with other_db.conn:
+                other_db.conn.execute(
+                    "REPLACE INTO index1.search_index ({}) {}".format(
+                        ", ".join("[{}]".format(column) for column in columns), sql
+                    )
+                )
+        other_db.conn.close()
+
+    # Rebuild FTS index (triggers don't fire for cross-database inserts)
+    # and optimize
+    db = sqlite_utils.Database(db_path)
+    with db.conn:
+        db.conn.execute(
+            'INSERT INTO search_index_fts(search_index_fts) VALUES ("rebuild")'
+        )
+        db["search_index"].optimize()
+    db.vacuum()
+
+
+def derive_columns(db, sql):
+    cursor = db.conn.execute(sql + " limit 0")
+    return [r[0] for r in cursor.description]
+
+
+def ensure_table_and_indexes(db, tokenize):
+    db["categories"].insert_all(CATEGORIES, pk="id", replace=True)
+    table = db["search_index"]
+    if not table.exists():
+        table.create(
+            COLUMNS,
+            pk=("type", "key"),
+            not_null=NOT_NULL,
+            defaults=DEFAULTS,
+        )
+    else:
+        # Ensure all the column exists
+        existing_columns = table.columns_dict.keys()
+        for key, type_ in COLUMNS.items():
+            if key not in existing_columns:
+                table.add_column(key, type_, not_null_default=DEFAULTS.get(key))
+    if not db["search_index_fts"].exists():
+        table.enable_fts(["title", "search_1"], create_triggers=True, tokenize=tokenize)
+    for index in INDEXES:
+        table.create_index(index, if_not_exists=True)
+    for fk in FOREIGN_KEYS:
+        try:
+            table.add_foreign_key(*fk)
+        except sqlite_utils.db.AlterError:
+            pass
+
+
+class BadMetadataError(Exception):
+    pass
+
+
+def parse_metadata(content):
+    # content can be JSON or YAML
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        try:
+            return yaml.safe_load(content)
+        except yaml.YAMLError:
+            raise BadMetadataError("Metadata is not valid JSON or YAML")
+
+
+
+================================================
+FILE: dogsheep_beta/templates/beta.html
+================================================
+{% extends "base.html" %}
+
+{% block title %}Dogsheep Beta{% if q %}: {{ q }}{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+.result {
+    padding: 1em 0;
+    border-bottom: 1px solid #666;
+}
+.result img {
+    max-width: 100%;
+}
+.facet h2 {
+    font-size: 1em;
+}
+.facet .x:link,
+.facet .x:visited,
+.facet .x:hover,
+.facet .x:focus,
+.facet .x:active {
+    text-decoration: none;
+}
+.facet .label {
+    word-wrap: break-word;
+}
+aside {
+    float: right;
+    width: 30%;
+}
+section.results {
+    margin-right: 30%;
+    padding-right: 2em;
+}
+pre, blockquote {
+    white-space: pre-wrap;
+}
+</style>
+<h1>Dogsheep Beta{% if q %}: {{ q }}{% endif %}</h1>
+
+<form action="/-/beta" method="get"><div>
+    <input type="search" name="q" value="{{ q }}" id="q">
+    {% if sorted_by != "relevance" %}
+        <input type="hidden" name="sort" value="{{ sorted_by }}">
+    {% endif %}
+    <input type="submit" value="Search">
+    {% for hidden in hiddens %}
+        <input type="hidden" name="{{ hidden.name }}" value="{{ hidden.value }}">
+    {% endfor %}
+</div></form>
+
+<p>Got {{ intcomma(count) }} result{% if count != 1 %}s{% endif %}, sorted by
+    <strong>{{ sorted_by }}</strong> /
+    {% for other_sort_order in other_sort_orders %} 
+        <a href="{{ other_sort_order.url }}">{{ other_sort_order.label }}</a>{% if not loop.last %} / {% endif %}
+    {% endfor %}
+</p>
+
+<aside>
+{% if facets %}
+    {% for facet in facets %}
+        {% if facet.results %}
+            <div class="facet">
+                <h2>{{ facet.name }}</h2>
+                <ul>
+                {% for item in facet.results %}
+                    <li{% if item.selected %} class="selected"{% endif %}>
+                        {% if item.selected %}
+                            <span class="label">{{ item.label }}</span> <a href="{{ item.toggle_url }}" class="x">✖</a>
+                        {% else %}
+                        <a href="{{ item.toggle_url }}" class="label">{{ item.label }}</a>
+                        {% endif %}
+                        - <span class="count">{{ intcomma(item.count) }}</span>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+</aside>
+
+<section class="results">
+{% for result in results %}
+    <div class="result" data-table-key="{{ result.type }}:{{ result.key }}">
+        {{ result.output|safe }}
+    </div>
+{% endfor %}
+</section>
+
+<script>
+/* If we find any data-map-latitude attrs, load Leaflet and turn those into maps */
+function loadLeaflet(callback) {
+    let loaded = [];
+    function hasLoaded() {
+        loaded.push(this);
+        if (loaded.length == 2) {
+            callback();
+        }
+    }
+    let stylesheet = document.createElement('link');
+    stylesheet.setAttribute('type', 'text/css');
+    stylesheet.setAttribute('rel', 'stylesheet');
+    stylesheet.setAttribute('href', 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.css');
+    stylesheet.setAttribute('integrity', 'sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==');
+    stylesheet.setAttribute('crossorigin', 'anonymous');
+    stylesheet.onload = hasLoaded;
+    document.head.appendChild(stylesheet);
+    let script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.5.1/dist/leaflet.js';
+    script.setAttribute('integrity', 'sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og==');
+    script.setAttribute('crossorigin', 'anonymous');
+    script.onload = stylesheet.onload = hasLoaded;
+    document.head.appendChild(script);
+};
+function loadMaps() {
+    const mapEls = document.querySelectorAll('[data-map-latitude]');
+    if (!mapEls.length) {
+        return;
+    }
+    loadLeaflet(() => {
+        console.log('leaded')
+        const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+        const tilesUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        Array.from(mapEls).forEach((el) => {
+            el.style.display = 'block';
+            const latitude = el.getAttribute('data-map-latitude');
+            const longitude = el.getAttribute('data-map-longitude');
+            const zoom = el.getAttribute('data-map-zoom') || 12;
+            const latlng = L.latLng(latitude, longitude);
+            let map = L.map(el, {layers: [L.tileLayer(tilesUrl, {
+                maxZoom: 19,
+                detectRetina: true,
+                attribution: attribution
+            })]});
+            L.marker(latlng).addTo(map);
+            map.setView(latlng, zoom);
+            window.lastMap = map;
+            window.lastLatLng = latlng;
+        });
+    });
+}
+loadMaps();
+</script>
+{% endblock %}
+
+
+
+================================================
+FILE: tests/test_cli.py
+================================================
+from click.testing import CliRunner
+from dogsheep_beta.cli import cli
+import sqlite_utils
+import datetime
+import textwrap
+import pytest
+
+
+def test_version():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ["--version"])
+        assert 0 == result.exit_code
+        assert result.output.startswith("cli, version ")
+
+
+@pytest.mark.parametrize("use_porter", [True, False])
+def test_basic(tmp_path_factory, monkeypatch, use_porter):
+    db_directory = tmp_path_factory.mktemp("dbs")
+    monkeypatch.chdir(db_directory)
+    db_path = db_directory / "dogs.db"
+    beta_path = db_directory / "beta.db"
+    config_path = db_directory / "config.yml"
+    db = sqlite_utils.Database(db_path)
+    db["dogs"].insert_all(
+        [
+            {
+                "id": 1,
+                "name": "Cleo",
+                "likes": "running",
+                "age": 5,
+                "created": "2020-08-22 04:41:33",
+            },
+            {
+                "id": 2,
+                "name": "Pancakes",
+                "likes": "chasing",
+                "age": 4,
+                "created": "2020-08-17 11:35:42",
+            },
+        ],
+        pk="id",
+    )
+
+    config_path.write_text(
+        textwrap.dedent(
+            """
+    dogs.db:
+        dogs:
+            sql: |-
+                select
+                    id as key,
+                    name as title,
+                    created as timestamp,
+                    case name when 'Cleo' then 1 else 2 end as category,
+                    likes as search_1
+                from dogs
+    """
+        ),
+        "utf-8",
+    )
+
+    runner = CliRunner()
+    args = ["index", str(beta_path), str(config_path)]
+    if not use_porter:
+        args.extend(["--tokenize", "none"])
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 0
+
+    beta_db = sqlite_utils.Database(beta_path)
+
+    assert list(beta_db["categories"].rows) == [
+        {"id": 1, "name": "created"},
+        {"id": 2, "name": "saved"},
+        {"id": 3, "name": "received"},
+    ]
+    assert list(beta_db["search_index"].rows) == [
+        {
+            "type": "dogs.db/dogs",
+            "key": "1",
+            "title": "Cleo",
+            "timestamp": "2020-08-22 04:41:33",
+            "category": 1,
+            "is_public": 0,
+            "search_1": "running",
+            "search_2": None,
+            "search_3": None,
+        },
+        {
+            "type": "dogs.db/dogs",
+            "key": "2",
+            "title": "Pancakes",
+            "timestamp": "2020-08-17 11:35:42",
+            "category": 2,
+            "is_public": 0,
+            "search_1": "chasing",
+            "search_2": None,
+            "search_3": None,
+        },
+    ]
+    indexes = sorted([i.columns for i in beta_db["search_index"].indexes])
+    assert indexes == sorted([["is_public"], ["category"], ["timestamp"], ["type", "key"]])
+
+    # Test that search works, with porter stemming
+    results = list(beta_db["search_index"].search("run"))
+    if use_porter:
+        assert results == [
+            {
+                "rowid": 1,
+                "type": "dogs.db/dogs",
+                "key": "1",
+                "title": "Cleo",
+                "timestamp": "2020-08-22 04:41:33",
+                "category": 1,
+                "is_public": 0,
+                "search_1": "running",
+                "search_2": None,
+                "search_3": None,
+            }
+        ]
+    else:
+        assert results == []
+
+
+
+================================================
+FILE: tests/test_plugin.py
+================================================
+from datasette.app import Datasette
+from bs4 import BeautifulSoup as Soup
+from dogsheep_beta.cli import index
+from dogsheep_beta.utils import parse_metadata
+import textwrap
+import sqlite_utils
+import pytest
+import urllib
+
+
+@pytest.mark.asyncio
+async def test_search(ds):
+    client = ds.client
+    response = await client.get("/-/beta")
+    assert 200 == response.status_code
+    assert '<input type="search" name="q" value="" id="q">' in response.text
+    response = await client.get("/-/beta?q=things")
+    assert 200 == response.status_code
+    for fragment in (
+        "<p>Got 3 results",
+        "<p>Email from blah@example.com, subject Hey there",
+        "<p>Email from blah@example.com, subject What&#39;s going on",
+        "<p>Commit to dogsheep/dogsheep-beta on 2020-08-01T00:05:02",
+        '<p>User searched for: "things"</p>',
+    ):
+        assert fragment in response.text
+    # Test facets
+    soup = Soup(response.text, "html5lib")
+    facet_els = soup.select(".facet")
+    facets = [
+        {
+            "name": el.find("h2").text,
+            "values": [
+                {
+                    "selected": "selected" in li.get("class", ""),
+                    "count": int(li.select(".count")[0].text),
+                    "url": li.find("a")["href"],
+                    "label": li.select(".label")[0].text,
+                }
+                for li in el.find_all("li")
+            ],
+        }
+        for el in facet_els
+    ]
+    assert facets == [
+        {
+            "name": "type",
+            "values": [
+                {
+                    "selected": False,
+                    "count": 2,
+                    "url": "?type=emails.db%2Femails&q=things",
+                    "label": "emails.db/emails",
+                },
+                {
+                    "selected": False,
+                    "count": 1,
+                    "url": "?type=github.db%2Fcommits&q=things",
+                    "label": "github.db/commits",
+                },
+            ],
+        },
+        {
+            "name": "category",
+            "values": [
+                {
+                    "selected": False,
+                    "count": 1,
+                    "url": "?category=1&q=things",
+                    "label": "created",
+                }
+            ],
+        },
+        {
+            "name": "is_public",
+            "values": [
+                {
+                    "selected": False,
+                    "count": 2,
+                    "url": "?is_public=0&q=things",
+                    "label": "0",
+                },
+                {
+                    "selected": False,
+                    "count": 1,
+                    "url": "?is_public=1&q=things",
+                    "label": "1",
+                },
+            ],
+        },
+        {
+            "name": "timestamp",
+            "values": [
+                {
+                    "selected": False,
+                    "count": 2,
+                    "url": "?timestamp__date=2020-08-01&q=things",
+                    "label": "2020-08-01",
+                },
+                {
+                    "selected": False,
+                    "count": 1,
+                    "url": "?timestamp__date=2020-08-02&q=things",
+                    "label": "2020-08-02",
+                },
+            ],
+        },
+    ]
+
+
+all_results = [
+    "github.db/commits:5becbf70d64951e2910314ef5227d19b11c25b0c9586934941366da8997e57cb",
+    "emails.db/emails:2",
+    "github.db/commits:a5b39c5049b28997528bb0eca52730ab6febabeaba54cfcba0ab5d70e7207523",
+    "emails.db/emails:1",
+]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "q,expected",
+    (
+        ("", all_results),
+        (" ", all_results),
+        (
+            "things NOT email",
+            [
+                "github.db/commits:a5b39c5049b28997528bb0eca52730ab6febabeaba54cfcba0ab5d70e7207523"
+            ],
+        ),
+        (
+            "#dogfest",
+            ["emails.db/emails:1"],
+        ),
+        (
+            "github-to-sqlite",
+            [],
+        ),
+    ),
+)
+async def test_advanced_search(ds, q, expected):
+    client = ds.client
+    response = await client.get(
+        "/-/beta?" + urllib.parse.urlencode({"q": q})
+    )
+    assert response.status_code == 200
+    soup = Soup(response.text, "html5lib")
+    results = [el["data-table-key"] for el in soup.select("[data-table-key]")]
+    assert results == expected
+    if expected:
+        # Check that facets exist on the page
+        assert len(soup.select(".facet li")), "Could not see any facet results"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "sort,expected",
+    (
+        (
+            "",
+            ["emails.db/emails:1", "emails.db/emails:2"],
+        ),
+        (
+            "newest",
+            ["emails.db/emails:2", "emails.db/emails:1"],
+        ),
+        (
+            "oldest",
+            ["emails.db/emails:1", "emails.db/emails:2"],
+        ),
+    ),
+)
+async def test_search_order(ds, sort, expected):
+    client = ds.client
+    q = "email"
+    response = await client.get(
+        "/-/beta?" + urllib.parse.urlencode({"q": q, "sort": sort})
+    )
+    assert response.status_code == 200
+    soup = Soup(response.text, "html5lib")
+    results = [el["data-table-key"] for el in soup.select("[data-table-key]")]
+    assert results == expected
+    # Check that sort links exist and are correct
+    sort_label = sort or "relevance"
+    assert "<strong>{}</strong>".format(sort_label) in response.text
+    if sort_label != "relevance":
+        assert (
+            '<input type="hidden" name="sort" value="{}">'.format(sort_label)
+            in response.text
+        )
+    for sort_order in ("relevance", "newest", "oldest"):
+        if sort_order != sort_label:
+            assert ">{}</a>".format(sort_order) in response.text
+
+
+ALL_EXPECTED = [
+    "github.db/commits:5becbf70d64951e2910314ef5227d19b11c25b0c9586934941366da8997e57cb",
+    "emails.db/emails:2",
+    "github.db/commits:a5b39c5049b28997528bb0eca52730ab6febabeaba54cfcba0ab5d70e7207523",
+    "emails.db/emails:1",
+]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "sort,expected",
+    (
+        ("", ALL_EXPECTED),
+        ("newest", ALL_EXPECTED),
+        ("oldest", list(reversed(ALL_EXPECTED))),
+    ),
+)
+async def test_search_order_for_timeline(ds, sort, expected):
+    client = ds.client
+    url = "/-/beta"
+    if sort:
+        url += "?sort=" + sort
+    response = await client.get(url)
+    assert response.status_code == 200
+    soup = Soup(response.text, "html5lib")
+    results = [el["data-table-key"] for el in soup.select("[data-table-key]")]
+    assert results == expected
+    # Check that sort links exist and are correct
+    sort_label = sort or "newest"
+    assert "<strong>{}</strong>".format(sort_label) in response.text
+    assert ">relevance</a>" not in response.text
+    assert (
+        ">{}</a>".format("oldest" if sort_label == "newest" else "newest")
+        in response.text
+    )
+
+
+@pytest.mark.asyncio
+async def test_fixture(ds):
+    client = ds.client
+    response = await client.get("/-/databases.json")
+    assert 200 == response.status_code
+    assert {d["name"] for d in response.json()} == {"beta", "emails", "github"}
+
+
+@pytest.mark.asyncio
+async def test_plugin_is_installed():
+    ds = Datasette([], memory=True)
+    response = await ds.client.get("/-/plugins.json")
+    assert 200 == response.status_code
+    installed_plugins = {p["name"] for p in response.json()}
+    assert "dogsheep-beta" in installed_plugins
+
+
+@pytest.fixture
+def ds(tmp_path_factory, monkeypatch):
+    db_directory = tmp_path_factory.mktemp("dbs")
+    monkeypatch.chdir(db_directory)
+    github_path = db_directory / "github.db"
+    emails_path = db_directory / "emails.db"
+    beta_path = db_directory / "beta.db"
+    beta_config_path = db_directory / "dogsheep-beta.yml"
+
+    beta_config_path.write_text(
+        textwrap.dedent(
+            """
+    emails.db:
+        emails:
+            display_sql: |-
+                select * from emails where id = :key
+            display: |-
+                <p>Email from {{ display.from_ }}, subject {{ display.subject }}
+            sql: |-
+                select
+                    id as key,
+                    subject as title,
+                    date as timestamp,
+                    0 as is_public,
+                    body as search_1
+                from
+                    emails
+    github.db:
+        commits:
+            display_sql: |-
+                select
+                    commits.sha,
+                    commits.message,
+                    commits.committer_date,
+                    commits.repo_name,
+                    :q as their_query
+                from commits where sha = :key
+            display: |-
+                <p>Commit to {{ display.repo_name }} on {{ display.committer_date }}</p>
+                <p>{{ display.message }} - {{ display.sha }}</p>
+                <p>User searched for: "{{ display.their_query }}"</p>
+            sql: |-
+                select
+                    sha as key,
+                    'Commit to ' || commits.repo_name as title,
+                    committer_date as timestamp,
+                    1 as category,
+                    1 as is_public,
+                    message as search_1
+                from
+                    commits
+    """,
+        ),
+        "utf-8",
+    )
+
+    METADATA = textwrap.dedent(
+        """
+    plugins:
+        dogsheep-beta:
+            database: beta
+            config_file: dogsheep-beta.yml
+    """
+    )
+
+    github_db = sqlite_utils.Database(github_path)
+    github_db["commits"].insert_all(
+        [
+            {
+                "sha": "a5b39c5049b28997528bb0eca52730ab6febabeaba54cfcba0ab5d70e7207523",
+                "message": "Another commit to things",
+                "repo_name": "dogsheep/dogsheep-beta",
+                "committer_date": "2020-08-01T00:05:02",
+            },
+            {
+                "sha": "5becbf70d64951e2910314ef5227d19b11c25b0c9586934941366da8997e57cb",
+                "message": "Added some tests",
+                "repo_name": "dogsheep/dogsheep-beta",
+                "committer_date": "2020-08-02T12:35:48",
+            },
+        ],
+        pk="sha",
+    )
+    emails_db = sqlite_utils.Database(emails_path)
+    emails_db["emails"].insert_all(
+        [
+            {
+                "id": 1,
+                "subject": "Hey there #dogfest",
+                "body": "An email about things",
+                "from_": "blah@example.com",
+                "date": "2020-08-01T00:05:02",
+            },
+            {
+                "id": 2,
+                "subject": "What's going on",
+                "body": "Another email about things",
+                "from_": "blah@example.com",
+                "date": "2020-08-02T00:05:02",
+            },
+        ],
+        pk="id",
+    )
+    index.callback(beta_path, beta_config_path, None, [])
+    ds = Datasette(
+        [str(beta_path), str(github_path), str(emails_path)],
+        metadata=parse_metadata(METADATA),
+    )
+    return ds
+
+
+
+================================================
+FILE: .github/workflows/publish.yml
+================================================
+name: Publish Python Package
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
+        cache-dependency-path: pyproject.toml
+    - name: Install dependencies
+      run: |
+        pip install . --group dev
+    - name: Run tests
+      run: |
+        pytest
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test]
+    environment: release
+    permissions:
+      id-token: write
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.13'
+        cache: pip
+        cache-dependency-path: pyproject.toml
+    - name: Install dependencies
+      run: |
+        pip install build
+    - name: Build
+      run: |
+        python -m build
+    - name: Publish
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+
+
+================================================
+FILE: .github/workflows/test.yml
+================================================
+name: Test
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        datasette-version: ["<1.0", ">=1.0a26"]
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: pip
+        cache-dependency-path: pyproject.toml
+    - name: Install dependencies
+      run: |
+        pip install . --group dev
+        pip install "datasette${{ matrix.datasette-version }}"
+    - name: Run tests
+      run: |
+        pytest
+
+

@@ -1,0 +1,811 @@
+Directory structure:
+└── dorianbrown-rank_bm25/
+    ├── README.md
+    ├── CITATION
+    ├── LICENSE
+    ├── rank_bm25.py
+    ├── requirements.txt
+    ├── setup.py
+    ├── version.py
+    ├── tests/
+    │   └── test_loading.py
+    └── .github/
+        └── workflows/
+            ├── pytest.yml
+            └── python-publish.yml
+
+================================================
+FILE: README.md
+================================================
+# Rank-BM25: A two line search engine
+
+![Build Status](https://github.com/dorianbrown/rank_bm25/workflows/pytest/badge.svg)
+[![PyPI version](https://badge.fury.io/py/rank-bm25.svg)](https://badge.fury.io/py/rank-bm25)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/rank_bm25)
+[![DOI](https://zenodo.org/badge/166720547.svg)](https://zenodo.org/badge/latestdoi/166720547)
+![PyPI - License](https://img.shields.io/pypi/l/rank_bm25)
+
+A collection of algorithms for querying a set of documents and returning the ones most relevant to the query. The most common use case for these algorithms is, as you might have guessed, to create search engines.
+
+So far the algorithms that have been implemented are:
+- [x] Okapi BM25
+- [x] BM25L
+- [x] BM25+
+- [ ] BM25-Adpt
+- [ ] BM25T 
+
+These algorithms were taken from [this paper](http://www.cs.otago.ac.nz/homepages/andrew/papers/2014-2.pdf), which gives a nice overview of each method, and also benchmarks them against each other. A nice inclusion is that they compare different kinds of preprocessing like stemming vs no-stemming, stopword removal or not, etc. Great read if you're new to the topic. 
+
+> For those looking to use this in large scale production environments, I'd recommend you take a look at something like [retriv](https://github.com/AmenRa/retriv), which is a much more performant python retrieval package. See [#27](https://github.com/dorianbrown/rank_bm25/issues/27)
+
+## Installation
+The easiest way to install this package is through `pip`, using
+```bash
+pip install rank_bm25
+```
+If you want to be sure you're getting the newest version, you can install it directly from github with
+```bash
+pip install git+ssh://git@github.com/dorianbrown/rank_bm25.git
+```
+
+## Usage
+For this example we'll be using the `BM25Okapi` algorithm, but the others are used in pretty much the same way.
+
+### Initalizing
+
+First thing to do is create an instance of the BM25 class, which reads in a corpus of text and does some indexing on it:
+```python
+from rank_bm25 import BM25Okapi
+
+corpus = [
+    "Hello there good man!",
+    "It is quite windy in London",
+    "How is the weather today?"
+]
+
+tokenized_corpus = [doc.split(" ") for doc in corpus]
+
+bm25 = BM25Okapi(tokenized_corpus)
+# <rank_bm25.BM25Okapi at 0x1047881d0>
+```
+Note that this package doesn't do any text preprocessing. If you want to do things like lowercasing, stopword removal, stemming, etc, you need to do it yourself. 
+
+The only requirements is that the class receives a list of lists of strings, which are the document tokens.
+
+### Ranking of documents
+
+Now that we've created our document indexes, we can give it queries and see which documents are the most relevant:
+```python
+query = "windy London"
+tokenized_query = query.split(" ")
+
+doc_scores = bm25.get_scores(tokenized_query)
+# array([0.        , 0.93729472, 0.        ])
+```
+Good to note that we also need to tokenize our query, and apply the same preprocessing steps we did to the documents in order to have an apples-to-apples comparison
+
+Instead of getting the document scores, you can also just retrieve the best documents with
+```python
+bm25.get_top_n(tokenized_query, corpus, n=1)
+# ['It is quite windy in London']
+```
+And that's pretty much it!
+
+
+
+================================================
+FILE: CITATION
+================================================
+@software{rank_bm25,
+  author = {Dorian Brown},
+  title = {{Rank-BM25: A Collection of BM25 Algorithms in Python}},
+  year = 2020,
+  publisher = {Zenodo},
+  doi = {10.5281/zenodo.4520057},
+  url = {https://doi.org/10.5281/zenodo.4520057}
+}
+
+
+================================================
+FILE: LICENSE
+================================================
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+
+
+================================================
+FILE: rank_bm25.py
+================================================
+#!/usr/bin/env python
+
+import math
+import numpy as np
+from multiprocessing import Pool, cpu_count
+
+"""
+All of these algorithms have been taken from the paper:
+Trotmam et al, Improvements to BM25 and Language Models Examined
+
+Here we implement all the BM25 variations mentioned. 
+"""
+
+
+class BM25:
+    def __init__(self, corpus, tokenizer=None):
+        self.corpus_size = 0
+        self.avgdl = 0
+        self.doc_freqs = []
+        self.idf = {}
+        self.doc_len = []
+        self.tokenizer = tokenizer
+
+        if tokenizer:
+            corpus = self._tokenize_corpus(corpus)
+
+        nd = self._initialize(corpus)
+        self._calc_idf(nd)
+
+    def _initialize(self, corpus):
+        nd = {}  # word -> number of documents with word
+        num_doc = 0
+        for document in corpus:
+            self.doc_len.append(len(document))
+            num_doc += len(document)
+
+            frequencies = {}
+            for word in document:
+                if word not in frequencies:
+                    frequencies[word] = 0
+                frequencies[word] += 1
+            self.doc_freqs.append(frequencies)
+
+            for word, freq in frequencies.items():
+                try:
+                    nd[word]+=1
+                except KeyError:
+                    nd[word] = 1
+
+            self.corpus_size += 1
+
+        self.avgdl = num_doc / self.corpus_size
+        return nd
+
+    def _tokenize_corpus(self, corpus):
+        pool = Pool(cpu_count())
+        tokenized_corpus = pool.map(self.tokenizer, corpus)
+        return tokenized_corpus
+
+    def _calc_idf(self, nd):
+        raise NotImplementedError()
+
+    def get_scores(self, query):
+        raise NotImplementedError()
+
+    def get_batch_scores(self, query, doc_ids):
+        raise NotImplementedError()
+
+    def get_top_n(self, query, documents, n=5):
+
+        assert self.corpus_size == len(documents), "The documents given don't match the index corpus!"
+
+        scores = self.get_scores(query)
+        top_n = np.argsort(scores)[::-1][:n]
+        return [documents[i] for i in top_n]
+
+
+class BM25Okapi(BM25):
+    def __init__(self, corpus, tokenizer=None, k1=1.5, b=0.75, epsilon=0.25):
+        self.k1 = k1
+        self.b = b
+        self.epsilon = epsilon
+        super().__init__(corpus, tokenizer)
+
+    def _calc_idf(self, nd):
+        """
+        Calculates frequencies of terms in documents and in corpus.
+        This algorithm sets a floor on the idf values to eps * average_idf
+        """
+        # collect idf sum to calculate an average idf for epsilon value
+        idf_sum = 0
+        # collect words with negative idf to set them a special epsilon value.
+        # idf can be negative if word is contained in more than half of documents
+        negative_idfs = []
+        for word, freq in nd.items():
+            idf = math.log(self.corpus_size - freq + 0.5) - math.log(freq + 0.5)
+            self.idf[word] = idf
+            idf_sum += idf
+            if idf < 0:
+                negative_idfs.append(word)
+        self.average_idf = idf_sum / len(self.idf)
+
+        eps = self.epsilon * self.average_idf
+        for word in negative_idfs:
+            self.idf[word] = eps
+
+    def get_scores(self, query):
+        """
+        The ATIRE BM25 variant uses an idf function which uses a log(idf) score. To prevent negative idf scores,
+        this algorithm also adds a floor to the idf value of epsilon.
+        See [Trotman, A., X. Jia, M. Crane, Towards an Efficient and Effective Search Engine] for more info
+        :param query:
+        :return:
+        """
+        score = np.zeros(self.corpus_size)
+        doc_len = np.array(self.doc_len)
+        for q in query:
+            q_freq = np.array([(doc.get(q) or 0) for doc in self.doc_freqs])
+            score += (self.idf.get(q) or 0) * (q_freq * (self.k1 + 1) /
+                                               (q_freq + self.k1 * (1 - self.b + self.b * doc_len / self.avgdl)))
+        return score
+
+    def get_batch_scores(self, query, doc_ids):
+        """
+        Calculate bm25 scores between query and subset of all docs
+        """
+        assert all(di < len(self.doc_freqs) for di in doc_ids)
+        score = np.zeros(len(doc_ids))
+        doc_len = np.array(self.doc_len)[doc_ids]
+        for q in query:
+            q_freq = np.array([(self.doc_freqs[di].get(q) or 0) for di in doc_ids])
+            score += (self.idf.get(q) or 0) * (q_freq * (self.k1 + 1) /
+                                               (q_freq + self.k1 * (1 - self.b + self.b * doc_len / self.avgdl)))
+        return score.tolist()
+
+
+class BM25L(BM25):
+    def __init__(self, corpus, tokenizer=None, k1=1.5, b=0.75, delta=0.5):
+        # Algorithm specific parameters
+        self.k1 = k1
+        self.b = b
+        self.delta = delta
+        super().__init__(corpus, tokenizer)
+
+    def _calc_idf(self, nd):
+        for word, freq in nd.items():
+            idf = math.log(self.corpus_size + 1) - math.log(freq + 0.5)
+            self.idf[word] = idf
+
+    def get_scores(self, query):
+        score = np.zeros(self.corpus_size)
+        doc_len = np.array(self.doc_len)
+        for q in query:
+            q_freq = np.array([(doc.get(q) or 0) for doc in self.doc_freqs])
+            ctd = q_freq / (1 - self.b + self.b * doc_len / self.avgdl)
+            score += (self.idf.get(q) or 0) * (self.k1 + 1) * (ctd + self.delta) / \
+                     (self.k1 + ctd + self.delta)
+        return score
+
+    def get_batch_scores(self, query, doc_ids):
+        """
+        Calculate bm25 scores between query and subset of all docs
+        """
+        assert all(di < len(self.doc_freqs) for di in doc_ids)
+        score = np.zeros(len(doc_ids))
+        doc_len = np.array(self.doc_len)[doc_ids]
+        for q in query:
+            q_freq = np.array([(self.doc_freqs[di].get(q) or 0) for di in doc_ids])
+            ctd = q_freq / (1 - self.b + self.b * doc_len / self.avgdl)
+            score += (self.idf.get(q) or 0) * (self.k1 + 1) * (ctd + self.delta) / \
+                     (self.k1 + ctd + self.delta)
+        return score.tolist()
+
+
+class BM25Plus(BM25):
+    def __init__(self, corpus, tokenizer=None, k1=1.5, b=0.75, delta=1):
+        # Algorithm specific parameters
+        self.k1 = k1
+        self.b = b
+        self.delta = delta
+        super().__init__(corpus, tokenizer)
+
+    def _calc_idf(self, nd):
+        for word, freq in nd.items():
+            idf = math.log(self.corpus_size + 1) - math.log(freq)
+            self.idf[word] = idf
+
+    def get_scores(self, query):
+        score = np.zeros(self.corpus_size)
+        doc_len = np.array(self.doc_len)
+        for q in query:
+            q_freq = np.array([(doc.get(q) or 0) for doc in self.doc_freqs])
+            score += (self.idf.get(q) or 0) * (self.delta + (q_freq * (self.k1 + 1)) /
+                                               (self.k1 * (1 - self.b + self.b * doc_len / self.avgdl) + q_freq))
+        return score
+
+    def get_batch_scores(self, query, doc_ids):
+        """
+        Calculate bm25 scores between query and subset of all docs
+        """
+        assert all(di < len(self.doc_freqs) for di in doc_ids)
+        score = np.zeros(len(doc_ids))
+        doc_len = np.array(self.doc_len)[doc_ids]
+        for q in query:
+            q_freq = np.array([(self.doc_freqs[di].get(q) or 0) for di in doc_ids])
+            score += (self.idf.get(q) or 0) * (self.delta + (q_freq * (self.k1 + 1)) /
+                                               (self.k1 * (1 - self.b + self.b * doc_len / self.avgdl) + q_freq))
+        return score.tolist()
+
+
+# BM25Adpt and BM25T are a bit more complicated than the previous algorithms here. Here a term-specific k1
+# parameter is calculated before scoring is done
+
+# class BM25Adpt(BM25):
+#     def __init__(self, corpus, k1=1.5, b=0.75, delta=1):
+#         # Algorithm specific parameters
+#         self.k1 = k1
+#         self.b = b
+#         self.delta = delta
+#         super().__init__(corpus)
+#
+#     def _calc_idf(self, nd):
+#         for word, freq in nd.items():
+#             idf = math.log((self.corpus_size + 1) / freq)
+#             self.idf[word] = idf
+#
+#     def get_scores(self, query):
+#         score = np.zeros(self.corpus_size)
+#         doc_len = np.array(self.doc_len)
+#         for q in query:
+#             q_freq = np.array([(doc.get(q) or 0) for doc in self.doc_freqs])
+#             score += (self.idf.get(q) or 0) * (self.delta + (q_freq * (self.k1 + 1)) /
+#                                                (self.k1 * (1 - self.b + self.b * doc_len / self.avgdl) + q_freq))
+#         return score
+#
+#
+# class BM25T(BM25):
+#     def __init__(self, corpus, k1=1.5, b=0.75, delta=1):
+#         # Algorithm specific parameters
+#         self.k1 = k1
+#         self.b = b
+#         self.delta = delta
+#         super().__init__(corpus)
+#
+#     def _calc_idf(self, nd):
+#         for word, freq in nd.items():
+#             idf = math.log((self.corpus_size + 1) / freq)
+#             self.idf[word] = idf
+#
+#     def get_scores(self, query):
+#         score = np.zeros(self.corpus_size)
+#         doc_len = np.array(self.doc_len)
+#         for q in query:
+#             q_freq = np.array([(doc.get(q) or 0) for doc in self.doc_freqs])
+#             score += (self.idf.get(q) or 0) * (self.delta + (q_freq * (self.k1 + 1)) /
+#                                                (self.k1 * (1 - self.b + self.b * doc_len / self.avgdl) + q_freq))
+#         return score
+
+
+
+================================================
+FILE: requirements.txt
+================================================
+numpy
+
+
+
+================================================
+FILE: setup.py
+================================================
+from setuptools import setup
+import io
+import os
+
+from version import get_version
+
+here = os.path.abspath(os.path.dirname(__file__))
+
+short_description = 'Various BM25 algorithms for document ranking'
+
+try:
+    with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
+        long_description = '\n' + f.read()
+except FileNotFoundError:
+    long_description = short_description
+
+setup(
+    name='rank_bm25',
+    version=get_version(),
+    description=short_description,
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    author='D. Brown',
+    author_email='dorianstuartbrown@gmail.com',
+    url="https://github.com/dorianbrown/rank_bm25",
+    license='Apache2.0',
+    py_modules=['rank_bm25'],
+    install_requires=['numpy'],
+    extras_require={
+        'dev': [
+            'pytest'
+        ]
+    }
+)
+
+
+
+================================================
+FILE: version.py
+================================================
+# This program is placed into the public domain.
+
+"""
+Gets the current version number.
+If in a git repository, it is the current git tag.
+Otherwise it is the one contained in the PKG-INFO file.
+
+To use this script, simply import it in your setup.py file
+and use the results of get_version() as your package version:
+
+    from version import *
+
+    setup(
+        ...
+        version=get_version(),
+        ...
+    )
+"""
+
+__all__ = ('get_version')
+
+from os.path import dirname, isdir, join
+import os
+import re
+import subprocess
+
+version_re = re.compile('^Version: (.+)$', re.M)
+
+
+def get_version():
+    d = dirname(__file__)
+
+    if isdir(join(d, '.git')):
+        # Get the version using "git describe".
+        cmd = 'git describe --tags --match [0-9]*'.split()
+        try:
+            version = subprocess.check_output(cmd).decode().strip()
+        except subprocess.CalledProcessError:
+            print('Unable to get version number from git tags')
+            exit(1)
+
+        # PEP 386 compatibility
+        if '-' in version:
+            version = '.post'.join(version.split('-')[:2])
+
+        # Don't declare a version "dirty" merely because a time stamp has
+        # changed. If it is dirty, append a ".dev1" suffix to indicate a
+        # development revision after the release.
+        with open(os.devnull, 'w') as fd_devnull:
+            subprocess.call(['git', 'status'],
+                            stdout=fd_devnull, stderr=fd_devnull)
+
+        cmd = 'git diff-index --name-only HEAD'.split()
+        try:
+            dirty = subprocess.check_output(cmd).decode().strip()
+        except subprocess.CalledProcessError:
+            print('Unable to get git index status')
+            exit(1)
+
+        if dirty != '':
+            version += '.dev1'
+
+    else:
+        # Extract the version from the PKG-INFO file.
+        with open(join(d, 'PKG-INFO')) as f:
+            version = version_re.search(f.read()).group(1)
+
+    return version
+
+
+if __name__ == '__main__':
+    print(get_version())
+
+
+================================================
+FILE: tests/test_loading.py
+================================================
+import sys
+import os
+myPath = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, myPath + '/../')
+
+from rank_bm25 import BM25Okapi, BM25L, BM25Plus
+import re
+
+
+corpus = [
+    "Hello there good man!",
+    "It is quite windy in London",
+    "How is the weather today?"
+]
+tokenized_corpus = [doc.split(" ") for doc in corpus]
+
+algs = [
+    BM25Okapi(tokenized_corpus),
+    BM25L(tokenized_corpus),
+    BM25Plus(tokenized_corpus)
+]
+
+
+def test_corpus_loading():
+    for alg in algs:
+        assert alg.corpus_size == 3
+        assert alg.avgdl == 5
+        assert alg.doc_len == [4, 6, 5]
+
+
+def tokenizer(doc):
+    return doc.split(" ")
+
+
+def test_tokenizer():
+    bm25 = BM25Okapi(corpus, tokenizer=tokenizer)
+    assert bm25.corpus_size == 3
+    assert bm25.avgdl == 5
+    assert bm25.doc_len == [4, 6, 5]
+
+
+
+================================================
+FILE: .github/workflows/pytest.yml
+================================================
+name: pytest
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Test with pytest
+      run: |
+        pytest
+
+
+================================================
+FILE: .github/workflows/python-publish.yml
+================================================
+# This workflows will upload a Python Package using Twine when a release is created
+# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
+
+name: Upload Python Package
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine
+    - name: Build and publish
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      run: |
+        python setup.py sdist bdist_wheel
+        twine upload dist/*
+
+

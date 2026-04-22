@@ -1,0 +1,415 @@
+{
+  "_schema": "v2",
+  "_comment": "Three-layer expansion network. 'direct' = immediate synonyms. 'concepts' = thematic/emotional neighbors. 'register' = domain tags used for cross-domain expansion. Edit freely — the app reloads this file on every search session start.",
+
+  "loss": {
+    "direct": ["grief","sorrow","mourning","bereavement","heartbreak","absence","deprivation","forfeit","privation","dispossession"],
+    "concepts": ["elegy","impermanence","longing","yearning","remembrance","melancholy","desolation","ache","lamentation","dirge","keening","bereft","wistfulness","regret","void","emptiness","wound","parting","farewell","severance","transience"],
+    "register": ["emotional","grief","literary"]
+  },
+  "grief": {
+    "direct": ["sorrow","mourning","anguish","heartbreak","woe","lamentation","bereavement","dolor","distress"],
+    "concepts": ["loss","elegy","desolation","bereft","weeping","inconsolable","devastation","heaviness","heavyhearted","keening","dirge","wound","emptiness","absence","impermanence"],
+    "register": ["emotional","grief","literary"]
+  },
+  "sorrow": {
+    "direct": ["grief","sadness","woe","melancholy","heartache","dolor","unhappiness","misery","despondency"],
+    "concepts": ["elegy","lamentation","heaviness","weight","burden","ache","mourning","loss","bereft","longing","regret","wistfulness","tender","desolation"],
+    "register": ["emotional","grief","literary"]
+  },
+  "love": {
+    "direct": ["affection","devotion","adoration","ardor","tenderness","attachment","fondness","passion","infatuation","reverence"],
+    "concepts": ["longing","yearning","desire","intimacy","vulnerability","care","cherish","eros","agape","philia","attachment","bond","warmth","romance","enchantment","rapture","ardency","fidelity","adulation","worship"],
+    "register": ["emotional","relational","literary"]
+  },
+  "desire": {
+    "direct": ["longing","yearning","craving","want","wish","appetite","hunger","thirst","aspiration","covetousness"],
+    "concepts": ["love","passion","eros","ardor","infatuation","obsession","attraction","magnetism","pull","need","drive","restlessness","ache","urgency"],
+    "register": ["emotional","relational","psychological"]
+  },
+  "longing": {
+    "direct": ["yearning","pining","craving","aching","wistfulness","nostalgia","desire","hunger"],
+    "concepts": ["love","loss","absence","grief","wistfulness","homesickness","regret","remembrance","unrequited","tenderness","melancholy","distance"],
+    "register": ["emotional","relational","literary"]
+  },
+  "yearning": {
+    "direct": ["longing","pining","craving","hungering","desire","wistfulness"],
+    "concepts": ["love","loss","absence","ache","tenderness","impermanence","nostalgia","distance","unrequited","homesickness"],
+    "register": ["emotional","relational","literary"]
+  },
+  "beauty": {
+    "direct": ["elegance","grace","loveliness","splendor","radiance","attractiveness","pulchritude","handsomeness"],
+    "concepts": ["sublime","aesthetic","art","wonder","transcendence","harmony","proportion","form","perfection","luminosity","serenity","awe","appreciation","perception","sensibility"],
+    "register": ["aesthetic","philosophical","literary"]
+  },
+  "sublime": {
+    "direct": ["transcendent","magnificent","awe-inspiring","exalted","elevated","majestic","noble"],
+    "concepts": ["beauty","wonder","terror","infinity","vastness","overwhelm","rapture","aesthetic","Kant","Burke","nature","limitlessness","awe","reverence"],
+    "register": ["aesthetic","philosophical","literary"]
+  },
+  "art": {
+    "direct": ["craft","creation","work","composition","expression","aesthetics","making","form"],
+    "concepts": ["beauty","imagination","creativity","representation","mimesis","aesthetics","vision","inspiration","technique","mastery","meaning","symbol","metaphor","narrative","culture"],
+    "register": ["aesthetic","cultural","philosophical"]
+  },
+  "time": {
+    "direct": ["duration","period","epoch","era","moment","instant","hour","age","interval"],
+    "concepts": ["impermanence","transience","memory","nostalgia","mortality","change","flux","passage","eternity","temporality","chronos","kairos","past","present","future","decay","aging"],
+    "register": ["philosophical","existential","literary"]
+  },
+  "memory": {
+    "direct": ["recollection","remembrance","reminiscence","recall","retrospect","anamnesis","nostalgia"],
+    "concepts": ["past","time","loss","impermanence","nostalgia","identity","selfhood","legacy","heritage","trace","ghost","haunting","history","wound","childhood","forgetting"],
+    "register": ["psychological","philosophical","literary"]
+  },
+  "nostalgia": {
+    "direct": ["longing","wistfulness","homesickness","reminiscence","sentimentality","retrospection"],
+    "concepts": ["memory","past","loss","childhood","innocence","time","impermanence","idealization","yearning","bittersweet","heritage"],
+    "register": ["emotional","psychological","literary"]
+  },
+  "mortality": {
+    "direct": ["death","dying","impermanence","finitude","transience","perishability"],
+    "concepts": ["time","aging","loss","grief","legacy","meaning","existence","fear","anxiety","courage","afterlife","eternity","impermanence","decay","endings"],
+    "register": ["philosophical","existential","literary"]
+  },
+  "death": {
+    "direct": ["dying","demise","passing","end","mortality","extinction","decease"],
+    "concepts": ["loss","grief","mourning","impermanence","mortality","finitude","legacy","afterlife","spirit","soul","elegy","farewell","silence","void","nothingness","eternity"],
+    "register": ["philosophical","existential","literary","grief"]
+  },
+  "fear": {
+    "direct": ["dread","terror","fright","alarm","apprehension","trepidation","anxiety","panic","horror","phobia"],
+    "concepts": ["courage","danger","threat","vulnerability","uncertainty","darkness","unknown","risk","cowardice","survival","instinct","paranoia","dread","foreboding","horror"],
+    "register": ["emotional","psychological","existential"]
+  },
+  "anxiety": {
+    "direct": ["worry","dread","apprehension","nervousness","unease","agitation","distress","trepidation"],
+    "concepts": ["fear","uncertainty","existential","doubt","anticipation","tension","vulnerability","modern","alienation","overwhelm"],
+    "register": ["psychological","emotional","existential"]
+  },
+  "courage": {
+    "direct": ["bravery","valor","fortitude","boldness","daring","audacity","heroism","gallantry","intrepidity","nerve"],
+    "concepts": ["fear","danger","resolve","defiance","steadfastness","resilience","conviction","sacrifice","virtue","honor","justice","endurance"],
+    "register": ["ethical","existential","literary","virtue"]
+  },
+  "justice": {
+    "direct": ["fairness","equity","righteousness","impartiality","law","right","morality","virtue"],
+    "concepts": ["injustice","oppression","freedom","equality","ethics","conscience","morality","law","rights","duty","obligation","responsibility","society","power","resistance","dignity"],
+    "register": ["ethical","political","philosophical"]
+  },
+  "injustice": {
+    "direct": ["unfairness","inequity","wrong","oppression","tyranny","abuse","exploitation","discrimination"],
+    "concepts": ["justice","courage","resistance","suffering","dignity","rights","power","protest","inequality","violence","systemic","harm","victim","redress"],
+    "register": ["ethical","political","philosophical"]
+  },
+  "freedom": {
+    "direct": ["liberty","autonomy","independence","sovereignty","emancipation","liberation","self-determination"],
+    "concepts": ["justice","power","oppression","dignity","rights","choice","agency","will","constraint","captivity","resistance","democracy","responsibility"],
+    "register": ["political","ethical","philosophical","existential"]
+  },
+  "power": {
+    "direct": ["authority","dominion","control","strength","force","might","sovereignty","command","influence"],
+    "concepts": ["freedom","oppression","politics","hierarchy","resistance","justice","corruption","agency","capability","domination","submission","leadership"],
+    "register": ["political","sociological","philosophical"]
+  },
+  "truth": {
+    "direct": ["reality","fact","accuracy","veracity","authenticity","candor","honesty","sincerity"],
+    "concepts": ["knowledge","wisdom","clarity","revelation","insight","epistemology","certainty","doubt","illusion","deception","light","understanding","disclosure"],
+    "register": ["philosophical","epistemological","ethical"]
+  },
+  "knowledge": {
+    "direct": ["understanding","wisdom","learning","insight","comprehension","awareness","cognition","erudition"],
+    "concepts": ["truth","ignorance","enlightenment","education","reason","science","philosophy","experience","discovery","inquiry","episteme","clarity","mind"],
+    "register": ["philosophical","epistemological","intellectual"]
+  },
+  "wisdom": {
+    "direct": ["insight","understanding","sagacity","discernment","prudence","enlightenment","judgment","perspicacity"],
+    "concepts": ["knowledge","age","experience","truth","philosophy","virtue","reflection","maturity","equanimity","understanding","guidance","teaching"],
+    "register": ["philosophical","ethical","virtue"]
+  },
+  "ignorance": {
+    "direct": ["unawareness","unknowing","blindness","naivety","inexperience","illiteracy"],
+    "concepts": ["knowledge","darkness","shadow","innocence","prejudice","bias","error","awakening","education","enlightenment"],
+    "register": ["philosophical","epistemological"]
+  },
+  "nature": {
+    "direct": ["wilderness","landscape","environment","world","earth","cosmos","terrain","countryside"],
+    "concepts": ["beauty","sublime","wonder","solitude","seasons","growth","decay","cycle","ecology","elemental","pastoral","wildness","transcendence","creation","origin"],
+    "register": ["aesthetic","philosophical","ecological","literary"]
+  },
+  "solitude": {
+    "direct": ["aloneness","isolation","seclusion","loneliness","withdrawal","hermitage","privacy","quietude"],
+    "concepts": ["contemplation","reflection","silence","peace","self","nature","freedom","exile","alienation","meditation","introspection","withdrawal"],
+    "register": ["psychological","philosophical","literary","spiritual"]
+  },
+  "loneliness": {
+    "direct": ["isolation","aloneness","solitude","desolation","estrangement","disconnection","abandonment"],
+    "concepts": ["loss","grief","alienation","exile","disconnection","yearning","modern","crowd","invisible","silence","emptiness","separation"],
+    "register": ["emotional","psychological","sociological","literary"]
+  },
+  "alienation": {
+    "direct": ["estrangement","disconnection","isolation","separation","detachment","otherness","marginalization"],
+    "concepts": ["loneliness","modernity","identity","belonging","society","community","self","meaninglessness","existential","labor","capitalism","otherness"],
+    "register": ["sociological","philosophical","existential"]
+  },
+  "childhood": {
+    "direct": ["youth","infancy","boyhood","girlhood","early life","innocence","adolescence","growing up"],
+    "concepts": ["innocence","memory","nostalgia","wonder","play","growth","family","home","belonging","loss","identity","formation","time","past"],
+    "register": ["psychological","literary","autobiographical"]
+  },
+  "innocence": {
+    "direct": ["purity","naivety","guilelessness","simplicity","ingenuousness","artlessness","blamelessness"],
+    "concepts": ["childhood","loss","knowledge","experience","corruption","fall","garden","paradise","wonder","openness","trust","vulnerability"],
+    "register": ["ethical","literary","theological","psychological"]
+  },
+  "age": {
+    "direct": ["aging","old age","elderhood","senescence","maturity","decline","advancing years"],
+    "concepts": ["mortality","wisdom","memory","time","impermanence","decay","experience","legacy","retrospect","frailty","dignity","finitude","acceptance"],
+    "register": ["existential","philosophical","literary"]
+  },
+  "body": {
+    "direct": ["flesh","physical","corporeal","embodiment","form","matter","physique"],
+    "concepts": ["mortality","desire","sensation","pain","pleasure","vulnerability","soul","spirit","nature","decay","beauty","health","illness","gender","identity"],
+    "register": ["philosophical","embodied","literary","psychological"]
+  },
+  "soul": {
+    "direct": ["spirit","psyche","inner life","essence","anima","self","being"],
+    "concepts": ["body","mortality","immortality","meaning","purpose","god","transcendence","depth","interiority","conscience","identity","love","beauty"],
+    "register": ["theological","philosophical","literary","spiritual"]
+  },
+  "god": {
+    "direct": ["divine","deity","creator","lord","almighty","sacred","the absolute"],
+    "concepts": ["faith","doubt","religion","transcendence","meaning","mortality","prayer","worship","soul","spirit","cosmos","creation","justice","love","mystery"],
+    "register": ["theological","philosophical","spiritual"]
+  },
+  "faith": {
+    "direct": ["belief","trust","conviction","devotion","creed","hope","religion","piety"],
+    "concepts": ["doubt","god","meaning","certainty","uncertainty","hope","commitment","loyalty","community","revelation","mystery","prayer"],
+    "register": ["theological","philosophical","psychological"]
+  },
+  "doubt": {
+    "direct": ["uncertainty","skepticism","questioning","hesitation","disbelief","suspicion","ambivalence"],
+    "concepts": ["faith","truth","knowledge","anxiety","inquiry","reason","conscience","crisis","modernity","alienation","questioning"],
+    "register": ["philosophical","psychological","theological"]
+  },
+  "hope": {
+    "direct": ["expectation","aspiration","optimism","anticipation","desire","wish","prospect"],
+    "concepts": ["faith","future","despair","possibility","light","dawn","resilience","endurance","courage","love","meaning"],
+    "register": ["emotional","philosophical","existential","theological"]
+  },
+  "despair": {
+    "direct": ["hopelessness","desolation","despondency","anguish","gloom","dejection","nihilism","resignation"],
+    "concepts": ["hope","loss","grief","existential","darkness","void","meaninglessness","suffering","endurance","crisis"],
+    "register": ["emotional","existential","philosophical","literary"]
+  },
+  "silence": {
+    "direct": ["quiet","stillness","muteness","hush","absence of sound","wordlessness"],
+    "concepts": ["death","contemplation","presence","void","peace","mystery","solitude","listening","unspeakable","trauma","communication","language"],
+    "register": ["literary","philosophical","spiritual","psychological"]
+  },
+  "darkness": {
+    "direct": ["shadow","gloom","obscurity","night","blackness","murk"],
+    "concepts": ["fear","evil","unconscious","mystery","unknown","depth","hidden","despair","night","light","contrast","gothic","horror","death","void"],
+    "register": ["literary","psychological","philosophical","symbolic"]
+  },
+  "light": {
+    "direct": ["illumination","radiance","brightness","luminosity","glow","clarity","dawn"],
+    "concepts": ["truth","knowledge","hope","beauty","revelation","goodness","god","sunrise","understanding","transcendence","warmth","vision","awakening"],
+    "register": ["literary","philosophical","theological","symbolic"]
+  },
+  "journey": {
+    "direct": ["voyage","travel","quest","odyssey","pilgrimage","path","passage","trek","wandering"],
+    "concepts": ["growth","change","identity","discovery","adventure","exile","return","transformation","meaning","hero","narrative","life","experience"],
+    "register": ["literary","philosophical","archetypal"]
+  },
+  "home": {
+    "direct": ["dwelling","abode","hearth","shelter","house","homeland","belonging","refuge"],
+    "concepts": ["identity","belonging","exile","nostalgia","return","family","comfort","safety","loss","displacement","memory","community"],
+    "register": ["psychological","sociological","literary","existential"]
+  },
+  "exile": {
+    "direct": ["displacement","banishment","expulsion","estrangement","diaspora","homelessness","ostracism"],
+    "concepts": ["home","belonging","loneliness","alienation","identity","loss","journey","memory","nostalgia","return","otherness"],
+    "register": ["political","sociological","literary","existential"]
+  },
+  "identity": {
+    "direct": ["selfhood","self","personhood","individuality","character","subjectivity","ego"],
+    "concepts": ["memory","body","soul","community","culture","belonging","change","growth","masks","authenticity","alienation","gender","race","formation"],
+    "register": ["psychological","philosophical","sociological","literary"]
+  },
+  "suffering": {
+    "direct": ["pain","anguish","torment","misery","affliction","agony","hardship","tribulation"],
+    "concepts": ["grief","loss","endurance","resilience","meaning","compassion","empathy","injustice","courage","despair","hope","healing","trauma"],
+    "register": ["ethical","philosophical","psychological","theological"]
+  },
+  "compassion": {
+    "direct": ["empathy","sympathy","mercy","pity","kindness","tenderness","care","understanding"],
+    "concepts": ["love","suffering","justice","ethics","community","humanity","healing","connection","sacrifice","virtue","dignity"],
+    "register": ["ethical","psychological","spiritual","relational"]
+  },
+  "war": {
+    "direct": ["conflict","battle","combat","violence","warfare","strife","struggle"],
+    "concepts": ["death","courage","sacrifice","loss","trauma","heroism","injustice","power","nationalism","suffering","memory","peace","violence","destruction"],
+    "register": ["historical","political","literary","ethical"]
+  },
+  "peace": {
+    "direct": ["tranquility","serenity","calm","harmony","quiet","reconciliation","truce"],
+    "concepts": ["war","justice","beauty","solitude","nature","silence","love","community","healing","balance","equanimity","rest"],
+    "register": ["political","philosophical","spiritual","psychological"]
+  },
+  "change": {
+    "direct": ["transformation","alteration","shift","evolution","transition","metamorphosis","flux"],
+    "concepts": ["time","growth","decay","impermanence","identity","journey","revolution","loss","renewal","adaptation","cycle","becoming"],
+    "register": ["philosophical","psychological","literary"]
+  },
+  "growth": {
+    "direct": ["development","maturation","evolution","expansion","flourishing","becoming"],
+    "concepts": ["change","childhood","identity","journey","learning","resilience","nature","time","formation","education","wisdom"],
+    "register": ["psychological","philosophical","literary","ecological"]
+  },
+  "imagination": {
+    "direct": ["creativity","fantasy","vision","invention","fancy","inspiration","dreaming"],
+    "concepts": ["art","poetry","story","wonder","freedom","beauty","play","fiction","myth","dream","possibility","creation","mind"],
+    "register": ["aesthetic","psychological","philosophical","literary"]
+  },
+  "dream": {
+    "direct": ["vision","fantasy","reverie","aspiration","hallucination","illusion","ideal"],
+    "concepts": ["imagination","unconscious","desire","hope","sleep","memory","myth","unreality","possibility","Freud","Jung","symbol"],
+    "register": ["psychological","literary","philosophical"]
+  },
+  "story": {
+    "direct": ["narrative","tale","account","fable","myth","chronicle","legend","anecdote"],
+    "concepts": ["imagination","meaning","identity","culture","history","truth","memory","community","voice","testimony","fiction","metaphor"],
+    "register": ["literary","cultural","philosophical"]
+  },
+  "language": {
+    "direct": ["words","speech","tongue","voice","discourse","expression","text","writing"],
+    "concepts": ["meaning","communication","culture","identity","power","silence","truth","literature","translation","thought","naming","metaphor"],
+    "register": ["philosophical","linguistic","literary","cultural"]
+  },
+  "poetry": {
+    "direct": ["verse","lyric","poem","ode","sonnet","elegy","rhyme"],
+    "concepts": ["language","beauty","emotion","rhythm","music","image","metaphor","truth","feeling","voice","art","literature","imagination"],
+    "register": ["aesthetic","literary","artistic"]
+  },
+  "music": {
+    "direct": ["melody","rhythm","harmony","song","composition","sound","tune"],
+    "concepts": ["emotion","beauty","art","time","movement","soul","language","culture","pattern","feeling","listening","performance"],
+    "register": ["aesthetic","artistic","cultural"]
+  },
+  "nature_of_humanity": {
+    "direct": ["human condition","what it means to be human","human nature","humanity"],
+    "concepts": ["mortality","love","justice","suffering","community","identity","meaning","consciousness","evolution","society","culture","ethics"],
+    "register": ["philosophical","anthropological","literary"]
+  },
+  "consciousness": {
+    "direct": ["awareness","mind","sentience","self-awareness","experience","perception","subjectivity"],
+    "concepts": ["identity","soul","knowledge","reality","time","embodiment","psychology","philosophy","thought","dream","unconscious"],
+    "register": ["philosophical","psychological","scientific"]
+  },
+  "meaning": {
+    "direct": ["purpose","significance","value","reason","import","sense","substance"],
+    "concepts": ["existence","identity","god","nihilism","absurdism","value","ethics","narrative","story","hope","death","wisdom","quest"],
+    "register": ["philosophical","existential","theological"]
+  },
+  "existence": {
+    "direct": ["being","life","reality","presence","actuality","being-in-the-world"],
+    "concepts": ["meaning","death","identity","consciousness","freedom","responsibility","anxiety","absurdism","authenticity","time","world"],
+    "register": ["philosophical","existential"]
+  },
+  "society": {
+    "direct": ["community","civilization","culture","collective","social order","people","public"],
+    "concepts": ["power","justice","freedom","identity","belonging","norms","institutions","politics","class","gender","race","alienation"],
+    "register": ["sociological","political","philosophical"]
+  },
+  "family": {
+    "direct": ["kin","relations","household","lineage","ancestry","heritage","parents","children"],
+    "concepts": ["love","home","belonging","identity","memory","childhood","legacy","duty","loyalty","community","conflict","bond"],
+    "register": ["sociological","psychological","literary"]
+  },
+  "friendship": {
+    "direct": ["companionship","fellowship","camaraderie","bond","alliance","affinity","intimacy"],
+    "concepts": ["love","trust","loyalty","community","belonging","shared experience","joy","support","understanding","solidarity"],
+    "register": ["relational","ethical","literary"]
+  },
+  "betrayal": {
+    "direct": ["treachery","disloyalty","deception","perfidy","faithlessness","duplicity"],
+    "concepts": ["trust","friendship","love","grief","wound","justice","anger","disillusionment","identity","loss","power"],
+    "register": ["ethical","relational","psychological","literary"]
+  },
+  "anger": {
+    "direct": ["rage","fury","wrath","ire","indignation","outrage","resentment"],
+    "concepts": ["injustice","passion","power","grief","pain","protest","justice","emotion","fire","intensity","conflict","catharsis"],
+    "register": ["emotional","psychological","ethical"]
+  },
+  "joy": {
+    "direct": ["happiness","delight","elation","bliss","pleasure","gladness","exuberance","jubilation"],
+    "concepts": ["love","beauty","wonder","gratitude","freedom","play","childhood","celebration","belonging","life","light"],
+    "register": ["emotional","philosophical","spiritual","literary"]
+  },
+  "wonder": {
+    "direct": ["awe","amazement","astonishment","marvel","curiosity","enchantment","admiration"],
+    "concepts": ["beauty","sublime","nature","childhood","knowledge","mystery","art","imagination","transcendence","discovery"],
+    "register": ["aesthetic","philosophical","psychological","spiritual"]
+  },
+  "gratitude": {
+    "direct": ["thankfulness","appreciation","recognition","acknowledgment","indebtedness"],
+    "concepts": ["joy","humility","love","beauty","wonder","presence","ethics","virtue","grace","abundance"],
+    "register": ["ethical","spiritual","psychological"]
+  },
+  "humility": {
+    "direct": ["modesty","meekness","self-effacement","lowliness","unpretentiousness"],
+    "concepts": ["virtue","wisdom","gratitude","truth","learning","power","ego","pride","grace","service"],
+    "register": ["ethical","spiritual","virtue"]
+  },
+  "pride": {
+    "direct": ["dignity","honor","self-respect","arrogance","vanity","hubris","confidence"],
+    "concepts": ["humility","identity","community","virtue","vice","fall","shame","justice","power"],
+    "register": ["ethical","psychological","literary"]
+  },
+  "shame": {
+    "direct": ["guilt","embarrassment","dishonor","humiliation","disgrace","self-reproach"],
+    "concepts": ["pride","identity","community","ethics","trauma","healing","vulnerability","silence","hiding","exposure"],
+    "register": ["psychological","ethical","sociological","literary"]
+  },
+  "healing": {
+    "direct": ["recovery","restoration","mending","rehabilitation","renewal","wholeness","recuperation"],
+    "concepts": ["suffering","grief","trauma","time","compassion","love","growth","resilience","hope","medicine","therapy","forgiveness"],
+    "register": ["psychological","medical","spiritual","relational"]
+  },
+  "forgiveness": {
+    "direct": ["pardon","absolution","mercy","clemency","reconciliation","release","amnesty"],
+    "concepts": ["justice","anger","betrayal","healing","compassion","love","ethics","freedom","peace","grace"],
+    "register": ["ethical","theological","psychological","relational"]
+  },
+  "resilience": {
+    "direct": ["endurance","persistence","tenacity","fortitude","recovery","adaptability","strength"],
+    "concepts": ["suffering","courage","hope","trauma","growth","change","identity","survival","healing","community"],
+    "register": ["psychological","ethical","existential"]
+  },
+  "truth_seeking": {
+    "direct": ["inquiry","investigation","questioning","exploration","discovery","search"],
+    "concepts": ["knowledge","philosophy","science","doubt","reason","courage","honesty","justice","meaning","awakening"],
+    "register": ["philosophical","epistemological","ethical"]
+  },
+  "violence": {
+    "direct": ["force","brutality","aggression","harm","abuse","cruelty","destruction"],
+    "concepts": ["power","injustice","war","suffering","trauma","body","silence","resistance","ethics","community","fear"],
+    "register": ["ethical","political","sociological","literary"]
+  },
+  "beauty_of_impermanence": {
+    "direct": ["transience","ephemerality","fleetingness","brevity","momentariness"],
+    "concepts": ["wabi-sabi","mono no aware","time","loss","impermanence","autumn","cherry blossom","Buddhist","appreciation","acceptance","mortality"],
+    "register": ["philosophical","aesthetic","spiritual","Japanese"]
+  },
+  "quote": {
+    "direct": ["passage","citation","excerpt","saying","aphorism","maxim","line","utterance"],
+    "concepts": ["wisdom","voice","language","literature","testimony","source","attribution","reference"],
+    "register": ["literary","textual"]
+  },
+  "elegy": {
+    "direct": ["lament","dirge","threnody","memorial","tribute","ode to loss"],
+    "concepts": ["grief","death","loss","mourning","memory","beauty","poetry","lamentation","impermanence","farewell"],
+    "register": ["literary","grief","aesthetic"]
+  }
+}

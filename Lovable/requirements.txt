@@ -1,0 +1,28 @@
+# PDF Intelligence — minimal pinned dependencies
+# Total install footprint targets: < 80 MB uncompressed.
+
+# --- Core PDF text extraction ---
+pdfplumber==0.11.4         # primary extractor, pulls pdfminer.six + Pillow
+pypdf==5.1.0               # pure-Python fallback / lightweight extractor
+
+# --- Linguistic processing ---
+snowballstemmer==2.2.0     # tiny pure-Python stemmer (replaces sheet 7 suffix hacks)
+
+# --- Optional but recommended ---
+rapidfuzz==3.10.1          # ~2 MB C-ext, used only for typo-tolerant fallback
+nltk==3.9.1                # punkt sentence tokenizer (data downloaded on first run)
+
+# --- EPUB ---
+ebooklib==0.18             # pure-Python EPUB reader
+beautifulsoup4==4.12.3     # HTML cleanup inside EPUB chapters
+lxml==5.3.0                # optional fast parser (falls back to html.parser if missing)
+
+# --- Optional output ---
+reportlab==4.2.5           # pure-Python PDF generation from EPUB text
+
+# --- OCR (engine NOT bundled; user installs Tesseract separately) ---
+pytesseract==0.3.13        # thin wrapper, ~50 KB
+Pillow==11.0.0             # already a pdfplumber dep; reused for OCR rasterization
+
+# --- Packaging (dev only, not a runtime dep) ---
+# pyinstaller==6.11.1

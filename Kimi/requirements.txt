@@ -1,0 +1,11 @@
+pdfplumber>=0.11.0
+pypdf>=4.0.0
+Pillow>=10.0.0
+pytesseract>=0.3.10
+ebooklib>=0.18
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+snowballstemmer>=2.2.0
+ttkbootstrap>=1.10.0
+tkinterdnd2>=0.3.0; platform_system=="Windows"
+rapidfuzz>=3.0.0

@@ -1,0 +1,28 @@
+# ── Core PDF extraction ─────────────────────────────────────────────────────
+pdfplumber>=0.11.0
+pypdf>=5.0.0
+Pillow>=10.0.0
+
+# ── EPUB ─────────────────────────────────────────────────────────────────────
+ebooklib>=0.18
+beautifulsoup4>=4.12.0
+lxml>=5.0.0           # faster HTML parser for BS4 (optional but recommended)
+
+# ── NLP ──────────────────────────────────────────────────────────────────────
+snowballstemmer>=2.2.0
+nltk>=3.9.0           # punkt tokenizer (punkt_data downloaded on first use)
+
+# ── PDF generation (EPUB→PDF) ────────────────────────────────────────────────
+reportlab>=4.0.0
+
+# ── Fuzzy fallback ───────────────────────────────────────────────────────────
+rapidfuzz>=3.0.0
+
+# ── OCR (wrapper — Tesseract binary NOT bundled) ─────────────────────────────
+pytesseract>=0.3.13
+
+# ── Optional: embedding model runtime (T5) ───────────────────────────────────
+# Uncomment to enable semantic mode:
+# onnxruntime>=1.18.0
+# tokenizers>=0.19.0
+# numpy>=1.26.0
